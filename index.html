@@ -1,0 +1,932 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>When We're Free</title>
+<style>
+  :root {
+    --bg: #f4f4f7;
+    --surface: #ffffff;
+    --surface-2: #f0f0f4;
+    --ink: #1b1b24;
+    --ink-soft: #55555f;
+    --ink-faint: #8a8a95;
+    --line: #e2e2ea;
+    --line-strong: #d0d0da;
+    --accent: #5457d6;
+    --accent-ink: #ffffff;
+    --accent-soft: #ecedfb;
+    --good: #2e9e5b;
+    --good-soft: #e3f4ea;
+    --maybe: #c98a12;
+    --maybe-soft: #fbf1da;
+    --no: #d1524e;
+    --no-soft: #fbe6e5;
+    --shadow: 0 1px 2px rgba(20,20,36,.06), 0 8px 24px rgba(20,20,36,.06);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101015;
+      --surface: #1a1a22;
+      --surface-2: #23232d;
+      --ink: #f0f0f5;
+      --ink-soft: #b3b3bf;
+      --ink-faint: #7c7c88;
+      --line: #2c2c37;
+      --line-strong: #3a3a47;
+      --accent: #8285f0;
+      --accent-ink: #14141a;
+      --accent-soft: #24243a;
+      --good: #4cc079;
+      --good-soft: #17311f;
+      --maybe: #e0ab3c;
+      --maybe-soft: #322611;
+      --no: #e97b77;
+      --no-soft: #37191a;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101015;
+    --surface: #1a1a22;
+    --surface-2: #23232d;
+    --ink: #f0f0f5;
+    --ink-soft: #b3b3bf;
+    --ink-faint: #7c7c88;
+    --line: #2c2c37;
+    --line-strong: #3a3a47;
+    --accent: #8285f0;
+    --accent-ink: #14141a;
+    --accent-soft: #24243a;
+    --good: #4cc079;
+    --good-soft: #17311f;
+    --maybe: #e0ab3c;
+    --maybe-soft: #322611;
+    --no: #e97b77;
+    --no-soft: #37191a;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.5;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 660px;
+    margin: 0 auto;
+    padding: 20px 18px 72px;
+  }
+  h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Inter', sans-serif; font-weight: 700; line-height: 1.12; text-wrap: balance; margin: 0; }
+  .mono { font-family: 'Space Mono', ui-monospace, 'SFMono-Regular', monospace; }
+
+  header.app {
+    display: flex; align-items: center; gap: 11px;
+    padding: 6px 2px 20px;
+  }
+  .logo {
+    width: 40px; height: 40px; border-radius: 11px; flex: 0 0 auto;
+    background: var(--accent); color: var(--accent-ink);
+    display: grid; place-items: center;
+    font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px;
+    box-shadow: var(--shadow);
+  }
+  header.app .name { font-size: 19px; letter-spacing: -.01em; }
+  header.app .sub { font-size: 12.5px; color: var(--ink-faint); margin-top: 1px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card > h2 { font-size: 17px; letter-spacing: -.01em; margin-bottom: 3px; }
+  .card > .hint { color: var(--ink-soft); font-size: 13.5px; margin: 0 0 16px; }
+  .eyebrow {
+    font-size: 11px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 9px;
+  }
+
+  label.field { display: block; margin-bottom: 14px; }
+  label.field .lab { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); margin-bottom: 5px; }
+  input[type="text"], input[type="date"], textarea, select {
+    width: 100%; font: inherit; color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 10px; padding: 10px 12px;
+  }
+  input:focus, textarea:focus, select:focus, button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent);
+  }
+  textarea { resize: vertical; min-height: 60px; }
+
+  button {
+    font: inherit; font-weight: 600; cursor: pointer;
+    border-radius: 10px; border: 1px solid transparent; padding: 10px 16px;
+    background: var(--surface-2); color: var(--ink); border-color: var(--line-strong);
+    transition: transform .04s ease, background .12s ease;
+  }
+  button:active { transform: translateY(1px); }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  button.ghost { background: transparent; border-color: var(--line-strong); }
+  button.small { padding: 7px 12px; font-size: 13px; }
+  button.link { background: none; border: none; color: var(--accent); padding: 4px 2px; font-weight: 600; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .row { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
+  .grow { flex: 1 1 auto; min-width: 0; }
+
+  /* calendar picker */
+  .cal { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--surface-2); }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .cal-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 15px; }
+  .cal-nav { padding: 4px 13px; font-size: 18px; line-height: 1; background: var(--surface); }
+  .cal-dow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 5px; }
+  .cal-dow span { text-align: center; font-size: 11px; font-weight: 600; color: var(--ink-faint); letter-spacing: .03em; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .cal-day {
+    aspect-ratio: 1; border: 1.5px solid transparent; border-radius: 9px;
+    background: var(--surface); color: var(--ink); font-weight: 600; font-size: 13.5px;
+    display: grid; place-items: center; cursor: pointer; font-variant-numeric: tabular-nums;
+    transition: transform .04s ease;
+  }
+  .cal-day:active { transform: scale(.94); }
+  .cal-day.blank { background: transparent; cursor: default; }
+  .cal-day.past { color: var(--ink-faint); opacity: .35; cursor: not-allowed; background: transparent; border-color: transparent; }
+  .cal-day.today:not(.sel) { border-color: var(--line-strong); }
+  .cal-day.sel { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .cal-day:not(.blank):not(.past):not(.sel):hover { border-color: var(--accent); }
+
+  /* date chips on create */
+  .datechips { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .datechip .dc-label { flex: 1 1 130px; min-width: 90px; padding: 7px 10px; font-size: 12.5px; }
+  .datechip {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 9px 10px 9px 13px;
+  }
+  .datechip .dc-main { flex: 1 1 130px; min-width: 0; }
+  .datechip .dc-day { font-weight: 600; font-size: 14px; }
+  .datechip .dc-sub { font-size: 12px; color: var(--ink-faint); }
+  .datechip button { padding: 5px 9px; font-size: 12px; }
+  .empty { color: var(--ink-faint); font-size: 13px; padding: 10px 2px; }
+
+  /* respondent choices */
+  .qdate {
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 13px 14px; margin-bottom: 11px; background: var(--surface);
+  }
+  .qdate .qhead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+  .qdate .qday { font-weight: 600; font-size: 15px; }
+  .qdate .qsub { font-size: 12.5px; color: var(--ink-faint); }
+  .choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .choice {
+    text-align: center; padding: 9px 4px; border-radius: 9px; font-size: 13.5px; font-weight: 600;
+    border: 1.5px solid var(--line-strong); background: var(--surface-2); color: var(--ink-soft);
+    user-select: none;
+  }
+  .choice small { display: block; font-weight: 400; font-size: 16px; margin-bottom: 2px; }
+  .choice[data-v="2"].on { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+  .choice[data-v="1"].on { background: var(--maybe-soft); border-color: var(--maybe); color: var(--maybe); }
+  .choice[data-v="0"].on { background: var(--no-soft); border-color: var(--no); color: var(--no); }
+
+  /* code / link output */
+  .out {
+    background: var(--surface-2); border: 1px dashed var(--line-strong); border-radius: 10px;
+    padding: 11px 12px; font-size: 12.5px; word-break: break-all;
+  }
+  .toast {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 999px;
+    font-size: 13px; font-weight: 600; opacity: 0; pointer-events: none;
+    transition: opacity .2s, transform .2s; z-index: 50;
+    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* results */
+  .stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .dot.good { background: var(--good); } .dot.maybe { background: var(--maybe); } .dot.no { background: var(--no); }
+
+  .drank { display: flex; flex-direction: column; gap: 10px; }
+  .dcardR {
+    border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; background: var(--surface);
+    position: relative;
+  }
+  .dcardR.best { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-soft); }
+  .dcardR .rtop { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 9px; }
+  .dcardR .rday { font-weight: 600; font-size: 15px; }
+  .dcardR .rsub { font-size: 12px; color: var(--ink-faint); }
+  .badge {
+    font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+    background: var(--accent); color: var(--accent-ink); padding: 3px 8px; border-radius: 999px;
+  }
+  .meter { display: flex; height: 9px; border-radius: 999px; overflow: hidden; background: var(--surface-2); margin-bottom: 9px; }
+  .meter i { display: block; height: 100%; }
+  .meter i.g { background: var(--good); } .meter i.m { background: var(--maybe); } .meter i.n { background: var(--no); }
+  .tallies { display: flex; gap: 14px; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tallies .g { color: var(--good); } .tallies .m { color: var(--maybe); } .tallies .n { color: var(--no); }
+  .who { margin-top: 9px; font-size: 12px; color: var(--ink-soft); display: none; }
+  .who.show { display: block; }
+  .who b { color: var(--ink); font-weight: 600; }
+
+  .people { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
+  .person {
+    display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 6px 5px 12px;
+  }
+  .person button { padding: 2px 7px; font-size: 15px; line-height: 1; background: none; border: none; color: var(--ink-faint); }
+
+  .divider { height: 1px; background: var(--line); border: 0; margin: 18px 0; }
+  .note { font-size: 12.5px; color: var(--ink-soft); background: var(--surface-2); border-radius: 10px; padding: 11px 13px; }
+  .note strong { color: var(--ink); }
+  a.tlink { color: var(--accent); font-weight: 600; text-decoration: none; }
+  a.tlink:hover { text-decoration: underline; }
+  .foot { text-align: center; color: var(--ink-faint); font-size: 12px; margin-top: 26px; }
+  [hidden] { display: none !important; }
+  @media (max-width: 430px) {
+    .choices { gap: 6px; }
+    .choice { font-size: 12.5px; }
+  }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  html, body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <div class="logo">W</div>
+    <div>
+      <div class="name">When We're Free</div>
+      <div class="sub">Find a day that works for the whole crew</div>
+    </div>
+  </header>
+
+  <!-- ============ CREATE VIEW ============ -->
+  <section id="view-create" hidden>
+    <div class="card">
+      <div class="eyebrow">Step 1 · Set it up</div>
+      <h2>What are we planning?</h2>
+      <p class="hint">Add the dates you're considering. Your friends will mark each one Good, Maybe, or No.</p>
+      <label class="field">
+        <span class="lab">Event name</span>
+        <input type="text" id="c-title" placeholder="e.g. October game night" maxlength="80">
+      </label>
+      <label class="field">
+        <span class="lab">Note for friends (optional)</span>
+        <input type="text" id="c-desc" placeholder="e.g. thinking dinner + a movie after" maxlength="120">
+      </label>
+
+      <div class="lab" style="font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:2px;">Candidate dates</div>
+      <p class="hint" style="margin:0 0 10px;">Tap the days you want to offer. Tap a day again to remove it.</p>
+      <div class="cal">
+        <div class="cal-head">
+          <button class="cal-nav" id="cal-prev" type="button" aria-label="Previous month">‹</button>
+          <div class="cal-title" id="cal-title"></div>
+          <button class="cal-nav" id="cal-next" type="button" aria-label="Next month">›</button>
+        </div>
+        <div class="cal-dow"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <div class="lab" style="font-size:12.5px;font-weight:600;color:var(--ink-soft);margin:16px 0 5px;">Selected <span id="c-selcount" class="mono" style="color:var(--ink-faint);font-weight:400;"></span></div>
+      <div class="datechips" id="c-chips"></div>
+      <div class="empty" id="c-empty">No dates picked yet — tap days on the calendar above.</div>
+
+      <hr class="divider">
+      <button class="primary" id="c-make" type="button" style="width:100%;">Create links →</button>
+    </div>
+  </section>
+
+  <!-- ============ SHARE / LINKS VIEW (after create) ============ -->
+  <section id="view-links" hidden>
+    <div class="card">
+      <div class="eyebrow">Step 2 · Share it</div>
+      <h2 id="l-title">Your links are ready</h2>
+      <p class="hint">Send the friend link to your group. Keep the organizer link for yourself to watch responses roll in.</p>
+
+      <label class="field">
+        <span class="lab">🔗 Friend link — share this with everyone</span>
+        <div class="out mono" id="l-friend"></div>
+      </label>
+      <div class="row" style="margin:-6px 0 16px;">
+        <button class="primary small" data-copy="l-friend" type="button">Copy friend link</button>
+      </div>
+
+      <label class="field">
+        <span class="lab">⭐ Organizer link — bookmark this for yourself</span>
+        <div class="out mono" id="l-org"></div>
+      </label>
+      <div class="row" style="margin:-6px 0 4px;">
+        <button class="ghost small" data-copy="l-org" type="button">Copy organizer link</button>
+        <button class="primary small" id="l-goresults" type="button">Open organizer view →</button>
+      </div>
+    </div>
+    <div class="note">
+      <strong>How it works:</strong> each friend opens the friend link, marks their availability, and sends you back a short response code. Paste those codes into your organizer view and everyone gets stacked into one grid with the best day highlighted.
+    </div>
+  </section>
+
+  <!-- ============ RESPOND VIEW ============ -->
+  <section id="view-respond" hidden>
+    <div class="card">
+      <div class="eyebrow">You're invited</div>
+      <h2 id="r-title">Pick your availability</h2>
+      <p class="hint" id="r-desc"></p>
+      <label class="field">
+        <span class="lab">Your name</span>
+        <input type="text" id="r-name" placeholder="e.g. Alex" maxlength="40">
+      </label>
+      <div id="r-dates"></div>
+      <label class="field" style="margin-top:6px;">
+        <span class="lab">Anything to add? (optional)</span>
+        <input type="text" id="r-note" placeholder="e.g. can only do evenings" maxlength="100">
+      </label>
+    </div>
+
+    <div class="card" id="r-outcard">
+      <div class="eyebrow" id="r-outeyebrow">Send it back</div>
+      <h2 id="r-outtitle">Your response code</h2>
+      <p class="hint" id="r-outhint">Copy this and send it to the organizer (text, email, wherever). Change your answers above anytime — the code updates.</p>
+      <div id="r-selfblock" hidden>
+        <button class="primary" id="r-addself" type="button" disabled style="width:100%;">Add me to the results →</button>
+      </div>
+      <div id="r-codeblock">
+        <div class="out mono" id="r-code" style="margin-bottom:12px;">Add your name and pick your days to generate a code.</div>
+        <div class="row">
+          <button class="primary" data-copy="r-code" id="r-copycode" type="button" disabled>Copy response code</button>
+          <button class="ghost small" data-copy="r-replylink" id="r-copylink" type="button" disabled>Copy reply link instead</button>
+        </div>
+        <div class="out mono" id="r-replylink" hidden></div>
+      </div>
+    </div>
+    <div class="foot"><button class="link" id="r-toorg" type="button">Are you the organizer? Open the results view</button></div>
+  </section>
+
+  <!-- ============ RESULTS / ORGANIZER VIEW ============ -->
+  <section id="view-results" hidden>
+    <div class="card">
+      <div class="eyebrow">Organizer view</div>
+      <h2 id="o-title">Results</h2>
+      <p class="hint" id="o-desc"></p>
+      <div class="stat-row">
+        <span class="pill"><span class="dot good"></span>Good</span>
+        <span class="pill"><span class="dot maybe"></span>Maybe</span>
+        <span class="pill"><span class="dot no"></span>No</span>
+        <span class="pill" style="margin-left:auto;color:var(--ink-faint);" id="o-count">0 responses</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:16px;margin-bottom:12px;">Best days</h2>
+      <div class="drank" id="o-rank"></div>
+      <div class="empty" id="o-emptyrank" hidden>No responses yet. Paste a friend's code below to get started.</div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">Add a response</div>
+      <h2 style="font-size:16px;">Paste a friend's code</h2>
+      <p class="hint">Drop in a code (or reply link) a friend sent you.</p>
+      <textarea id="o-paste" placeholder="Paste code or reply link here…"></textarea>
+      <div class="row" style="margin-top:10px;">
+        <button class="primary small" id="o-import" type="button">Add response</button>
+        <button class="ghost small" id="o-addself" type="button">+ Add my own availability</button>
+      </div>
+      <div id="o-people-wrap" style="margin-top:16px;" hidden>
+        <div class="lab" style="font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:2px;">Responded so far</div>
+        <div class="people" id="o-people"></div>
+      </div>
+    </div>
+    <div class="foot"><button class="link" id="o-share" type="button">Need the friend link again? Copy it</button></div>
+  </section>
+
+  <div class="foot" id="global-foot" hidden></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- encoding helpers ----------
+  function b64urlEncode(str) {
+    var b = btoa(unescape(encodeURIComponent(str)));
+    return b.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function b64urlDecode(s) {
+    s = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    return decodeURIComponent(escape(atob(s)));
+  }
+  function hashStr(s) {
+    var h = 5381;
+    for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+    return h.toString(36);
+  }
+  function pollIdOf(poll) {
+    return hashStr(poll.dates.join('|') + '#' + (poll.t || '')).slice(0, 6);
+  }
+
+  // ---------- date formatting ----------
+  var DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function parseISO(iso) {
+    var p = iso.split('-');
+    return new Date(+p[0], +p[1] - 1, +p[2]);
+  }
+  function fmtDay(iso) {
+    var d = parseISO(iso);
+    return DOW[d.getDay()] + ', ' + MON[d.getMonth()] + ' ' + d.getDate();
+  }
+  function fmtYear(iso) { return '' + parseISO(iso).getFullYear(); }
+
+  // ---------- localStorage (wrapped) ----------
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  // ---------- toast ----------
+  var toastEl = document.getElementById('toast'), toastT;
+  function toast(msg) {
+    toastEl.textContent = msg; toastEl.classList.add('show');
+    clearTimeout(toastT); toastT = setTimeout(function () { toastEl.classList.remove('show'); }, 1700);
+  }
+
+  // ---------- clipboard ----------
+  function copyText(text, okMsg) {
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast(okMsg || 'Copied'); } catch (e) { toast('Copy failed — select manually'); }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast(okMsg || 'Copied'); }, fallback);
+    } else fallback();
+  }
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-copy]');
+    if (!btn) return;
+    var el = document.getElementById(btn.getAttribute('data-copy'));
+    if (el) copyText(el.textContent.trim(), 'Copied to clipboard');
+  });
+
+  // ---------- routing ----------
+  var VIEWS = ['create', 'links', 'respond', 'results'];
+  function show(v) {
+    VIEWS.forEach(function (name) {
+      document.getElementById('view-' + name).hidden = (name !== v);
+    });
+    window.scrollTo(0, 0);
+  }
+  function baseUrl() { return location.origin + location.pathname; }
+  function parseHash() {
+    var h = location.hash.replace(/^#/, '');
+    var out = {};
+    h.split('&').forEach(function (kv) {
+      if (!kv) return;
+      var i = kv.indexOf('=');
+      if (i < 0) { out[kv] = ''; return; }
+      out[decodeURIComponent(kv.slice(0, i))] = kv.slice(i + 1);
+    });
+    return out;
+  }
+  function friendLink(pollParam) { return baseUrl() + '#poll=' + pollParam; }
+  function orgLink(pollParam) { return baseUrl() + '#poll=' + pollParam + '&org=1'; }
+
+  // ============================================================
+  //  CREATE VIEW
+  // ============================================================
+  var createDates = []; // {iso, label}
+  var cChips = document.getElementById('c-chips');
+  var cEmpty = document.getElementById('c-empty');
+  var MONF = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+              'August', 'September', 'October', 'November', 'December'];
+  var calView = (function () { var d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; })();
+
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function isoYMD(y, m, d) { return y + '-' + pad2(m + 1) + '-' + pad2(d); }
+  function todayMidnight() { var t = new Date(); t.setHours(0, 0, 0, 0); return t; }
+
+  function renderCreate() { renderCalendar(); renderCreateChips(); }
+
+  function renderCalendar() {
+    document.getElementById('cal-title').textContent = MONF[calView.m] + ' ' + calView.y;
+    var grid = document.getElementById('cal-grid');
+    grid.innerHTML = '';
+    var startDow = new Date(calView.y, calView.m, 1).getDay();
+    var daysIn = new Date(calView.y, calView.m + 1, 0).getDate();
+    var t0 = todayMidnight();
+    var selSet = {};
+    createDates.forEach(function (d) { selSet[d.iso] = true; });
+    for (var b = 0; b < startDow; b++) {
+      var blank = document.createElement('div');
+      blank.className = 'cal-day blank';
+      grid.appendChild(blank);
+    }
+    for (var day = 1; day <= daysIn; day++) {
+      var iso = isoYMD(calView.y, calView.m, day);
+      var cell = new Date(calView.y, calView.m, day);
+      var isPast = cell < t0;
+      var cls = 'cal-day';
+      if (isPast) cls += ' past';
+      if (cell.getTime() === t0.getTime()) cls += ' today';
+      if (selSet[iso]) cls += ' sel';
+      var el = document.createElement('div');
+      el.className = cls;
+      el.textContent = day;
+      if (!isPast) (function (iso) { el.onclick = function () { toggleDate(iso); }; })(iso);
+      grid.appendChild(el);
+    }
+  }
+  function toggleDate(iso) {
+    var i = createDates.findIndex(function (d) { return d.iso === iso; });
+    if (i >= 0) createDates.splice(i, 1);
+    else createDates.push({ iso: iso, label: '' });
+    renderCreate();
+  }
+  document.getElementById('cal-prev').onclick = function () {
+    if (--calView.m < 0) { calView.m = 11; calView.y--; }
+    renderCalendar();
+  };
+  document.getElementById('cal-next').onclick = function () {
+    if (++calView.m > 11) { calView.m = 0; calView.y++; }
+    renderCalendar();
+  };
+
+  function renderCreateChips() {
+    cChips.innerHTML = '';
+    createDates.sort(function (a, b) { return a.iso < b.iso ? -1 : a.iso > b.iso ? 1 : 0; });
+    cEmpty.hidden = createDates.length > 0;
+    document.getElementById('c-selcount').textContent = createDates.length ? '· ' + createDates.length : '';
+    createDates.forEach(function (d) {
+      var row = document.createElement('div');
+      row.className = 'datechip';
+      var main = document.createElement('div');
+      main.className = 'dc-main';
+      main.innerHTML = '<div class="dc-day">' + fmtDay(d.iso) + '</div><div class="dc-sub">' + fmtYear(d.iso) + '</div>';
+      var lab = document.createElement('input');
+      lab.type = 'text'; lab.className = 'dc-label'; lab.placeholder = 'label (optional)';
+      lab.maxLength = 40; lab.value = d.label || '';
+      lab.oninput = function () { d.label = lab.value; };
+      var rm = document.createElement('button');
+      rm.className = 'ghost'; rm.type = 'button'; rm.textContent = 'Remove';
+      rm.onclick = function () { toggleDate(d.iso); };
+      row.appendChild(main); row.appendChild(lab); row.appendChild(rm);
+      cChips.appendChild(row);
+    });
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  document.getElementById('c-make').onclick = function () {
+    var title = document.getElementById('c-title').value.trim();
+    if (!title) { toast('Give it a name'); document.getElementById('c-title').focus(); return; }
+    if (createDates.length === 0) { toast('Add at least one date'); return; }
+    var poll = {
+      v: 1,
+      t: title,
+      d: document.getElementById('c-desc').value.trim(),
+      dates: createDates.map(function (x) { return x.iso; }),
+      labels: createDates.map(function (x) { return x.label || ''; })
+    };
+    var param = b64urlEncode(JSON.stringify(poll));
+    location.hash = 'poll=' + param + '&org=1&made=1';
+  };
+
+  // ============================================================
+  //  LINKS VIEW
+  // ============================================================
+  function renderLinks(poll, param) {
+    document.getElementById('l-title').textContent = poll.t + ' — links ready';
+    document.getElementById('l-friend').textContent = friendLink(param);
+    document.getElementById('l-org').textContent = orgLink(param);
+    document.getElementById('l-goresults').onclick = function () {
+      location.hash = 'poll=' + param + '&org=1';
+    };
+  }
+
+  // ============================================================
+  //  RESPOND VIEW
+  // ============================================================
+  var respondPoll = null, respondParam = null, respondPid = null, respondSelf = false;
+  var respondChoices = []; // per date: 2/1/0/undefined
+
+  function renderRespond(poll, param, selfMode) {
+    respondPoll = poll; respondParam = param; respondPid = pollIdOf(poll); respondSelf = !!selfMode;
+    respondChoices = poll.dates.map(function () { return undefined; });
+    document.getElementById('r-selfblock').hidden = !selfMode;
+    document.getElementById('r-codeblock').hidden = !!selfMode;
+    document.getElementById('r-toorg').closest('.foot').hidden = !!selfMode;
+    if (selfMode) {
+      document.getElementById('r-outeyebrow').textContent = 'Your availability';
+      document.getElementById('r-outtitle').textContent = 'Add yourself';
+      document.getElementById('r-outhint').textContent = 'Mark your own days and drop straight into the results — no code needed.';
+    } else {
+      document.getElementById('r-outeyebrow').textContent = 'Send it back';
+      document.getElementById('r-outtitle').textContent = 'Your response code';
+      document.getElementById('r-outhint').textContent = 'Copy this and send it to the organizer (text, email, wherever). Change your answers above anytime — the code updates.';
+    }
+    document.getElementById('r-title').textContent = poll.t;
+    document.getElementById('r-desc').textContent = poll.d || 'Mark each date below.';
+    if (!poll.d) document.getElementById('r-desc').style.color = 'var(--ink-faint)';
+
+    var host = document.getElementById('r-dates');
+    host.innerHTML = '';
+    poll.dates.forEach(function (iso, i) {
+      var lab = (poll.labels && poll.labels[i]) || '';
+      var block = document.createElement('div');
+      block.className = 'qdate';
+      block.innerHTML =
+        '<div class="qhead"><div class="qday">' + fmtDay(iso) + '</div>' +
+        '<div class="qsub">' + fmtYear(iso) + (lab ? ' · ' + escapeHtml(lab) : '') + '</div></div>' +
+        '<div class="choices">' +
+          choiceBtn(i, 2, '👍', 'Good') +
+          choiceBtn(i, 1, '🤔', 'Maybe') +
+          choiceBtn(i, 0, '👎', 'No') +
+        '</div>';
+      host.appendChild(block);
+    });
+    host.querySelectorAll('.choice').forEach(function (c) {
+      c.onclick = function () {
+        var i = +c.getAttribute('data-i'), v = +c.getAttribute('data-v');
+        respondChoices[i] = v;
+        host.querySelectorAll('.choice[data-i="' + i + '"]').forEach(function (x) { x.classList.remove('on'); });
+        c.classList.add('on');
+        updateRespondCode();
+      };
+    });
+    document.getElementById('r-name').oninput = updateRespondCode;
+    document.getElementById('r-note').oninput = updateRespondCode;
+    updateRespondCode();
+  }
+  function choiceBtn(i, v, emoji, text) {
+    return '<div class="choice" data-i="' + i + '" data-v="' + v + '"><small>' + emoji + '</small>' + text + '</div>';
+  }
+  function currentRespondResp() {
+    var name = document.getElementById('r-name').value.trim();
+    var answered = respondChoices.every(function (c) { return c !== undefined; });
+    if (!name || !answered) return null;
+    return {
+      n: name,
+      a: respondChoices.join(''),
+      m: document.getElementById('r-note').value.trim().slice(0, 140)
+    };
+  }
+  function updateRespondCode() {
+    var resp = currentRespondResp();
+    var selfBtn = document.getElementById('r-addself');
+    selfBtn.disabled = !resp;
+    if (respondSelf) return;
+    var codeEl = document.getElementById('r-code');
+    var copyBtn = document.getElementById('r-copycode');
+    var linkBtn = document.getElementById('r-copylink');
+    var replyEl = document.getElementById('r-replylink');
+    if (!resp) {
+      var name = document.getElementById('r-name').value.trim();
+      var answered = respondChoices.every(function (c) { return c !== undefined; });
+      var missing = [];
+      if (!name) missing.push('add your name');
+      if (!answered) missing.push('pick every day');
+      codeEl.textContent = 'Almost there — ' + missing.join(' and ') + ' to generate your code.';
+      copyBtn.disabled = true; linkBtn.disabled = true;
+      replyEl.hidden = true;
+      return;
+    }
+    var code = respondPid + '~' + b64urlEncode(JSON.stringify(resp));
+    codeEl.textContent = code;
+    var reply = orgLink(respondParam) + '&add=' + encodeURIComponent(code);
+    replyEl.textContent = reply;
+    copyBtn.disabled = false; linkBtn.disabled = false;
+  }
+  document.getElementById('r-addself').onclick = function () {
+    var resp = currentRespondResp();
+    if (!resp) { toast('Add your name and pick every day first'); return; }
+    addToStore(pollIdOf(respondPoll), resp);
+    toast('Added you to the results');
+    location.hash = 'poll=' + respondParam + '&org=1';
+  };
+  document.getElementById('r-copylink').addEventListener('click', function () {
+    document.getElementById('r-replylink').hidden = false;
+  });
+  document.getElementById('r-toorg').onclick = function () {
+    if (respondParam) location.hash = 'poll=' + respondParam + '&org=1';
+  };
+
+  // ============================================================
+  //  RESULTS / ORGANIZER VIEW
+  // ============================================================
+  var orgPoll = null, orgParam = null, orgPid = null, orgResponses = [];
+
+  function storeKey() { return 'wwf:' + orgPid; }
+  function loadResponses() {
+    var raw = lsGet(storeKey());
+    if (!raw) { orgResponses = []; return; }
+    try { orgResponses = JSON.parse(raw) || []; } catch (e) { orgResponses = []; }
+  }
+  function saveResponses() { lsSet(storeKey(), JSON.stringify(orgResponses)); }
+  function addToStore(pid, resp) {
+    var key = 'wwf:' + pid, arr = [];
+    try { arr = JSON.parse(lsGet(key)) || []; } catch (e) { arr = []; }
+    var lc = resp.n.toLowerCase();
+    var ex = arr.findIndex(function (r) { return r.n.toLowerCase() === lc; });
+    if (ex >= 0) arr[ex] = resp; else arr.push(resp);
+    lsSet(key, JSON.stringify(arr));
+  }
+
+  function decodeCode(raw) {
+    raw = raw.trim();
+    // allow a full reply link — extract add= param
+    var m = raw.match(/[#&]add=([^&]+)/);
+    if (m) raw = decodeURIComponent(m[1]);
+    var tilde = raw.indexOf('~');
+    if (tilde < 0) return { err: 'That doesn\'t look like a response code.' };
+    var pid = raw.slice(0, tilde);
+    var body = raw.slice(tilde + 1);
+    var obj;
+    try { obj = JSON.parse(b64urlDecode(body)); } catch (e) { return { err: 'Couldn\'t read that code — it may be incomplete.' }; }
+    if (!obj || typeof obj.a !== 'string' || !obj.n) return { err: 'That code is missing some data.' };
+    var mismatch = (pid !== orgPid);
+    if (obj.a.length !== orgPoll.dates.length) {
+      return { err: 'That response was made for a different set of dates. Ask them to use the current friend link.' };
+    }
+    return { resp: { n: String(obj.n).slice(0, 60), a: obj.a, m: (obj.m || '').slice(0, 140) }, mismatch: mismatch };
+  }
+
+  function renderResults(poll, param) {
+    orgPoll = poll; orgParam = param; orgPid = pollIdOf(poll);
+    loadResponses();
+    document.getElementById('o-title').textContent = poll.t;
+    document.getElementById('o-desc').textContent = poll.d || '';
+    document.getElementById('o-desc').hidden = !poll.d;
+    renderRank();
+  }
+
+  function renderRank() {
+    var n = orgResponses.length;
+    document.getElementById('o-count').textContent = n + (n === 1 ? ' response' : ' responses');
+    document.getElementById('o-emptyrank').hidden = n > 0;
+    var rank = document.getElementById('o-rank');
+    rank.innerHTML = '';
+
+    // tally per date
+    var stats = orgPoll.dates.map(function (iso, i) {
+      var g = 0, m = 0, no = 0;
+      orgResponses.forEach(function (r) {
+        var c = r.a.charAt(i);
+        if (c === '2') g++; else if (c === '1') m++; else no++;
+      });
+      return { iso: iso, i: i, g: g, m: m, no: no,
+               score: g * 2 + m,
+               label: (orgPoll.labels && orgPoll.labels[i]) || '' };
+    });
+
+    // ranking: most Good, then fewest No, then most Maybe
+    var ranked = stats.slice().sort(function (a, b) {
+      if (b.g !== a.g) return b.g - a.g;
+      if (a.no !== b.no) return a.no - b.no;
+      return b.m - a.m;
+    });
+    var bestKey = n > 0 ? (ranked[0].g + '|' + ranked[0].no + '|' + ranked[0].m) : null;
+
+    // keep chronological order for display but flag best
+    stats.forEach(function (s) {
+      var isBest = n > 0 && (s.g + '|' + s.no + '|' + s.m) === bestKey && s.g > 0;
+      var card = document.createElement('div');
+      card.className = 'dcardR' + (isBest ? ' best' : '');
+      var total = Math.max(1, s.g + s.m + s.no);
+      var who = orgResponses.map(function (r) {
+        var c = r.a.charAt(s.i);
+        var cls = c === '2' ? 'good' : c === '1' ? 'maybe' : 'no';
+        var sym = c === '2' ? '👍' : c === '1' ? '🤔' : '👎';
+        return '<span><b>' + escapeHtml(r.n) + '</b> ' + sym + '</span>';
+      }).join(' &nbsp; ');
+      card.innerHTML =
+        '<div class="rtop"><div><div class="rday">' + fmtDay(s.iso) + '</div>' +
+          '<div class="rsub">' + fmtYear(s.iso) + (s.label ? ' · ' + escapeHtml(s.label) : '') + '</div></div>' +
+          (isBest ? '<span class="badge">Best pick</span>' : '') + '</div>' +
+        '<div class="meter">' +
+          '<i class="g" style="width:' + (s.g / total * 100) + '%"></i>' +
+          '<i class="m" style="width:' + (s.m / total * 100) + '%"></i>' +
+          '<i class="n" style="width:' + (s.no / total * 100) + '%"></i></div>' +
+        '<div class="tallies"><span class="g">' + s.g + ' good</span>' +
+          '<span class="m">' + s.m + ' maybe</span>' +
+          '<span class="n">' + s.no + ' no</span></div>' +
+        (n > 0 ? '<div class="who">' + who + '</div>' : '');
+      if (n > 0) {
+        card.style.cursor = 'pointer';
+        card.onclick = function () { card.querySelector('.who').classList.toggle('show'); };
+      }
+      rank.appendChild(card);
+    });
+
+    // people list
+    var wrap = document.getElementById('o-people-wrap');
+    var pl = document.getElementById('o-people');
+    wrap.hidden = n === 0;
+    pl.innerHTML = '';
+    orgResponses.forEach(function (r, idx) {
+      var chip = document.createElement('span');
+      chip.className = 'person';
+      chip.innerHTML = escapeHtml(r.n) + (r.m ? ' <span style="color:var(--ink-faint);font-weight:400;">· ' + escapeHtml(r.m) + '</span>' : '');
+      var x = document.createElement('button');
+      x.type = 'button'; x.title = 'Remove'; x.textContent = '×';
+      x.onclick = function () { orgResponses.splice(idx, 1); saveResponses(); renderRank(); toast('Removed'); };
+      chip.appendChild(x);
+      pl.appendChild(chip);
+    });
+  }
+
+  function addResponse(resp) {
+    // replace if same name (case-insensitive) already responded
+    var lc = resp.n.toLowerCase();
+    var existing = orgResponses.findIndex(function (r) { return r.n.toLowerCase() === lc; });
+    if (existing >= 0) { orgResponses[existing] = resp; toast('Updated ' + resp.n + '’s response'); }
+    else { orgResponses.push(resp); toast('Added ' + resp.n); }
+    saveResponses(); renderRank();
+  }
+
+  document.getElementById('o-import').onclick = function () {
+    var box = document.getElementById('o-paste');
+    var raw = box.value.trim();
+    if (!raw) { toast('Paste a code first'); box.focus(); return; }
+    var res = decodeCode(raw);
+    if (res.err) { toast(res.err); return; }
+    addResponse(res.resp);
+    box.value = '';
+  };
+  document.getElementById('o-addself').onclick = function () {
+    // jump to respond view for this poll; they can grab their own code, but simpler: inline prompt
+    location.hash = 'poll=' + orgParam + '&self=1';
+  };
+  document.getElementById('o-share').onclick = function () {
+    copyText(friendLink(orgParam), 'Friend link copied');
+  };
+
+  // ============================================================
+  //  BOOT / ROUTER
+  // ============================================================
+  function route() {
+    var h = parseHash();
+    if (!h.poll) {
+      show('create');
+      renderCreate();
+      return;
+    }
+    var poll;
+    try { poll = JSON.parse(b64urlDecode(h.poll)); } catch (e) { poll = null; }
+    if (!poll || !poll.dates || !poll.dates.length) {
+      // corrupt link -> fall back to create
+      show('create'); renderCreate();
+      toast('That link looks broken — start a new one.');
+      return;
+    }
+    var param = h.poll;
+
+    if (h.made) { renderLinks(poll, param); show('links'); return; }
+
+    if (h.org) {
+      renderResults(poll, param);
+      show('results');
+      // auto-import a reply link's add= payload
+      if (h.add) {
+        var res = decodeCode(decodeURIComponent(h.add));
+        if (res.err) toast(res.err); else addResponse(res.resp);
+        // clean the add param from the url
+        location.hash = 'poll=' + param + '&org=1';
+      }
+      return;
+    }
+
+    // respondent (self=1 => organizer adding their own availability)
+    renderRespond(poll, param, !!h.self);
+    show('respond');
+  }
+
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script>
+
+</body>
+</html>

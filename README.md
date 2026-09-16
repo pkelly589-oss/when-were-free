@@ -68,6 +68,28 @@ Leaving a day blank counts as **"no reply"** — it never hurts or helps that da
 
 Each date is scored across everyone who responded, ranked by **most 👍, then fewest 👎, then most 🤔**. A single "No" doesn't rule a date out, but it does count against it. The top date gets a **Best pick** badge. The organizer can tap any date to see exactly who said what.
 
+### Exporting the results
+
+The organizer view has a **📋 Copy results** button that copies a plain-text summary to your clipboard — the event name, the best pick with who's available, a per-date breakdown, and the party size. It looks like this:
+
+```
+When We're Free — "October dinner"
+Note: dinner + a movie
+7 responses
+
+★ Best pick: Fri, Oct 17, 2026 — 5 available
+   Available: Alex, Sam, Jordan, Priya, Chris
+
+All dates:
+• Fri, Oct 17, 2026 — 5 good, 1 maybe, 1 no
+• Sat, Oct 18, 2026 — 4 good, 2 maybe, 1 no
+• Sun, Oct 19, 2026 — 2 good, 1 maybe, 3 no, 1 no reply
+
+Party size (available on best date): 5
+```
+
+Paste it into a message, your notes, or a Claude chat to hand off the outcome — the date and party size are exactly what a follow-up task (like booking a table) needs.
+
 ---
 
 ## Setup

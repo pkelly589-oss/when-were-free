@@ -428,6 +428,10 @@
         <span class="pill" style="margin-left:auto;color:var(--ink-faint);" id="o-count">0 responses</span>
       </div>
       <p class="note" id="o-livehint" hidden style="margin-top:14px;">🟢 <strong>Live mode.</strong> Friends submit straight from their link and appear here automatically — no codes to paste.</p>
+      <div class="row" style="margin-top:14px;">
+        <button class="primary small" id="o-copyresults" type="button">📋 Copy results</button>
+        <span class="pill" style="color:var(--ink-faint);">for Claude, notes, or a message</span>
+      </div>
     </div>
 
     <div class="card">
@@ -1192,6 +1196,47 @@
       addResponse(res.resp);
     }
     box.value = '';
+  };
+  function buildResultsSummary() {
+    if (!orgPoll) return '';
+    var n = orgResponses.length;
+    var lines = ['When We’re Free — "' + orgPoll.t + '"'];
+    if (orgPoll.d) lines.push('Note: ' + orgPoll.d);
+    lines.push(n + ' response' + (n === 1 ? '' : 's'));
+    lines.push('');
+    var stats = orgPoll.dates.map(function (iso, i) {
+      var g = [], m = [], no = [], skip = 0;
+      orgResponses.forEach(function (r) {
+        var c = r.a.charAt(i);
+        if (c === '2') g.push(r.n); else if (c === '1') m.push(r.n); else if (c === '0') no.push(r.n); else skip++;
+      });
+      return { iso: iso, g: g, m: m, no: no, skip: skip, label: (orgPoll.labels && orgPoll.labels[i]) || '' };
+    });
+    var ranked = stats.slice().sort(function (a, b) {
+      if (b.g.length !== a.g.length) return b.g.length - a.g.length;
+      if (a.no.length !== b.no.length) return a.no.length - b.no.length;
+      return b.m.length - a.m.length;
+    });
+    var best = (n > 0 && ranked[0].g.length > 0) ? ranked[0] : null;
+    function when(s) { return fmtDay(s.iso) + ', ' + fmtYear(s.iso) + (s.label ? ' (' + s.label + ')' : ''); }
+    if (best) {
+      lines.push('★ Best pick: ' + when(best) + ' — ' + best.g.length + ' available');
+      if (best.g.length) lines.push('   Available: ' + best.g.join(', '));
+      if (best.m.length) lines.push('   Maybe: ' + best.m.join(', '));
+      lines.push('');
+    }
+    lines.push('All dates:');
+    stats.forEach(function (s) {
+      var parts = [s.g.length + ' good', s.m.length + ' maybe', s.no.length + ' no'];
+      if (s.skip > 0) parts.push(s.skip + ' no reply');
+      lines.push('• ' + when(s) + ' — ' + parts.join(', '));
+    });
+    if (best) { lines.push(''); lines.push('Party size (available on best date): ' + best.g.length); }
+    return lines.join('\n');
+  }
+  document.getElementById('o-copyresults').onclick = function () {
+    if (!orgResponses.length) { toast('No responses yet to copy'); return; }
+    copyText(buildResultsSummary(), 'Results copied — paste into Claude');
   };
   document.getElementById('o-addself').onclick = function () {
     // jump to respond view for this poll; they can grab their own code, but simpler: inline prompt

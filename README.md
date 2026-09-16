@@ -17,6 +17,16 @@ The whole app is a **single, self-contained `index.html`** — no build step, no
 
 Nothing to install, and (in live mode) friends don't need any account.
 
+### Finding your links again
+
+Every poll you create is saved to a **"Your polls"** list in your browser, shown on the home screen. Reopen the site any time to see your recent polls with buttons to open the **Results** or copy the **Friend link** again — no need to bookmark or dig through history. (The list is per-device, since it's stored in your browser.)
+
+Beyond that list, the links are always recoverable because everything about a poll is encoded in its URL:
+
+- **Bookmark** the organizer link and open it any time; its results view has a button to copy the friend link again.
+- Either link leads to the other — the friend screen has an *"Are you the organizer?"* link, and the results screen has a *copy friend link* button.
+- Worst case, **recreate the poll with the same name and dates**: you'll get the identical links back, and in live mode it reconnects to the responses friends already submitted (responses are tied to the name + dates, not to the link).
+
 ---
 
 ## How it works
@@ -117,7 +127,8 @@ The Firebase `apiKey` is **not a secret** — it only identifies the project. Th
 
 - Responses live in a single Firestore collection called **`responses`**. Each document is one person's answer: `{ pollId, n (name), a (answers), m (note), ts }`. Re-submitting under the same name updates that person's answer.
 - A poll's `pollId` is a short hash of its dates and title, so responses are grouped by poll.
-- In **relay mode**, the organizer's collected responses are stored locally in their own browser (`localStorage`), so aggregate from one main device.
+- Your **"Your polls"** list is kept in your browser (`localStorage`), so it's specific to each device you create or open polls on. Removing a poll from the list doesn't delete the poll or its responses — it just clears the shortcut.
+- In **relay mode**, the organizer's collected responses are also stored locally in their own browser (`localStorage`), so aggregate from one main device.
 - There are no accounts or emails collected from friends. Anyone with a Friend link can view and submit — fine for a casual group; the short, unguessable `pollId` is the only thing tying responses to a poll.
 
 ---

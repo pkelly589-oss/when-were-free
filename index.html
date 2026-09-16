@@ -144,6 +144,15 @@
   .row { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
   .grow { flex: 1 1 auto; min-width: 0; }
 
+  /* your-polls list */
+  .pollrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 0; border-top: 1px solid var(--line); }
+  .pollrow:first-child { border-top: 0; padding-top: 2px; }
+  .pollrow-main { flex: 1 1 190px; min-width: 0; }
+  .pollrow-title { font-weight: 600; font-size: 14.5px; }
+  .pollrow-sub { font-size: 12px; color: var(--ink-faint); }
+  .pollrow-actions { display: flex; gap: 6px; align-items: center; }
+  .pollrow-actions .x { padding: 6px 9px; color: var(--ink-faint); }
+
   /* calendar picker */
   .cal { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--surface-2); }
   .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -288,6 +297,12 @@
 
   <!-- ============ CREATE VIEW ============ -->
   <section id="view-create" hidden>
+    <div class="card" id="mypolls-card" hidden>
+      <div class="eyebrow">Your polls</div>
+      <h2>Pick up where you left off</h2>
+      <p class="hint">Saved on this device. Open the results, or copy a link to share again.</p>
+      <div id="mypolls-list"></div>
+    </div>
     <div class="card">
       <div class="eyebrow">Step 1 · Set it up</div>
       <h2>What are we planning?</h2>
@@ -672,7 +687,55 @@
   function isoYMD(y, m, d) { return y + '-' + pad2(m + 1) + '-' + pad2(d); }
   function todayMidnight() { var t = new Date(); t.setHours(0, 0, 0, 0); return t; }
 
-  function renderCreate() { renderCalendar(); renderCreateChips(); }
+  function renderCreate() { renderMyPolls(); renderCalendar(); renderCreateChips(); }
+
+  // ---------- "Your polls" (saved on this device) ----------
+  function loadPolls() { try { return JSON.parse(lsGet('wwf:polls')) || []; } catch (e) { return []; } }
+  function savePolls(a) { lsSet('wwf:polls', JSON.stringify(a)); }
+  function rememberPoll(poll, param) {
+    var list = loadPolls();
+    var sorted = poll.dates.slice().sort();
+    var rec = { id: pollIdOf(poll), t: poll.t, p: param, n: poll.dates.length,
+                d0: sorted[0], d1: sorted[sorted.length - 1], ts: Date.now() };
+    var i = list.findIndex(function (x) { return x.p === param || x.id === rec.id; });
+    if (i >= 0) { rec.ts = list[i].ts || rec.ts; list.splice(i, 1); } // keep first-created time
+    list.unshift(rec);
+    if (list.length > 40) list = list.slice(0, 40);
+    savePolls(list);
+  }
+  function forgetPoll(param) {
+    savePolls(loadPolls().filter(function (x) { return x.p !== param; }));
+  }
+  function renderMyPolls() {
+    var card = document.getElementById('mypolls-card');
+    var host = document.getElementById('mypolls-list');
+    var list = loadPolls();
+    card.hidden = list.length === 0;
+    host.innerHTML = '';
+    list.forEach(function (rec) {
+      var row = document.createElement('div');
+      row.className = 'pollrow';
+      var range = rec.d0 ? (fmtDay(rec.d0) + (rec.d1 && rec.d1 !== rec.d0 ? ' – ' + fmtDay(rec.d1) : '')) : '';
+      var main = document.createElement('div');
+      main.className = 'pollrow-main';
+      main.innerHTML = '<div class="pollrow-title">' + escapeHtml(rec.t || 'Untitled') + '</div>' +
+        '<div class="pollrow-sub">' + rec.n + ' date' + (rec.n === 1 ? '' : 's') + (range ? ' · ' + escapeHtml(range) : '') + '</div>';
+      var actions = document.createElement('div');
+      actions.className = 'pollrow-actions';
+      var openBtn = document.createElement('button');
+      openBtn.className = 'primary small'; openBtn.type = 'button'; openBtn.textContent = 'Results';
+      openBtn.onclick = function () { location.hash = 'poll=' + rec.p + '&org=1'; };
+      var copyBtn = document.createElement('button');
+      copyBtn.className = 'ghost small'; copyBtn.type = 'button'; copyBtn.textContent = 'Friend link';
+      copyBtn.onclick = function () { copyText(friendLink(rec.p), 'Friend link copied'); };
+      var del = document.createElement('button');
+      del.className = 'ghost small x'; del.type = 'button'; del.title = 'Remove from this list'; del.textContent = '✕';
+      del.onclick = function () { forgetPoll(rec.p); renderMyPolls(); toast('Removed from list'); };
+      actions.appendChild(openBtn); actions.appendChild(copyBtn); actions.appendChild(del);
+      row.appendChild(main); row.appendChild(actions);
+      host.appendChild(row);
+    });
+  }
 
   function renderCalendar() {
     document.getElementById('cal-title').textContent = MONF[calView.m] + ' ' + calView.y;
@@ -757,7 +820,12 @@
       labels: createDates.map(function (x) { return x.label || ''; })
     };
     var param = encodePoll(poll);
+    rememberPoll(poll, param);
     location.hash = 'poll=' + param + '&org=1&made=1';
+    // reset the form so the next new poll starts clean
+    createDates.length = 0;
+    document.getElementById('c-title').value = '';
+    document.getElementById('c-desc').value = '';
   };
 
   // ============================================================
@@ -979,6 +1047,7 @@
   var orgUnsub = null;
   function renderResults(poll, param) {
     orgPoll = poll; orgParam = param; orgPid = pollIdOf(poll);
+    rememberPoll(poll, param); // so opening an organizer link also saves it on this device
     document.getElementById('o-title').textContent = poll.t;
     document.getElementById('o-desc').textContent = poll.d || '';
     document.getElementById('o-desc').hidden = !poll.d;

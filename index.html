@@ -7,67 +7,79 @@
 <title>When We're Free</title>
 <style>
   :root {
-    --bg: #f4f4f7;
+    --bg: #f7f4ef;
     --surface: #ffffff;
-    --surface-2: #f0f0f4;
-    --ink: #1b1b24;
-    --ink-soft: #55555f;
-    --ink-faint: #8a8a95;
-    --line: #e2e2ea;
-    --line-strong: #d0d0da;
-    --accent: #5457d6;
+    --surface-2: #f1eee7;
+    --ink: #262320;
+    --ink-soft: #6b655c;
+    --ink-faint: #9c948a;
+    --line: #ece7dd;
+    --line-strong: #dbd3c7;
+    --accent: #7a3f97;
     --accent-ink: #ffffff;
-    --accent-soft: #ecedfb;
+    --accent-soft: #f2ebf5;
+    --hi: #e5a01f;
+    --hi-ink: #3a2708;
+    --hi-soft: #fdf4e3;
+    --hi-ring: rgba(229,160,31,.32);
     --good: #2e9e5b;
-    --good-soft: #e3f4ea;
-    --maybe: #c98a12;
-    --maybe-soft: #fbf1da;
-    --no: #d1524e;
-    --no-soft: #fbe6e5;
-    --shadow: 0 1px 2px rgba(20,20,36,.06), 0 8px 24px rgba(20,20,36,.06);
+    --good-soft: #e4f3e9;
+    --maybe: #bd7a14;
+    --maybe-soft: #f6eed9;
+    --no: #cf504a;
+    --no-soft: #fae7e4;
+    --shadow: 0 1px 2px rgba(50,40,25,.05), 0 8px 24px rgba(50,40,25,.08);
     --radius: 14px;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #101015;
-      --surface: #1a1a22;
-      --surface-2: #23232d;
-      --ink: #f0f0f5;
-      --ink-soft: #b3b3bf;
-      --ink-faint: #7c7c88;
-      --line: #2c2c37;
-      --line-strong: #3a3a47;
-      --accent: #8285f0;
-      --accent-ink: #14141a;
-      --accent-soft: #24243a;
+      --bg: #1a1714;
+      --surface: #24211d;
+      --surface-2: #2d2925;
+      --ink: #f3efe8;
+      --ink-soft: #b4aca2;
+      --ink-faint: #877f75;
+      --line: #34302a;
+      --line-strong: #47423b;
+      --accent: #c69ae0;
+      --accent-ink: #241d29;
+      --accent-soft: #322a38;
+      --hi: #f0b54a;
+      --hi-ink: #2a1b06;
+      --hi-soft: #33291a;
+      --hi-ring: rgba(240,181,74,.34);
       --good: #4cc079;
-      --good-soft: #17311f;
+      --good-soft: #173023;
       --maybe: #e0ab3c;
       --maybe-soft: #322611;
       --no: #e97b77;
-      --no-soft: #37191a;
-      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+      --no-soft: #38201d;
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 30px rgba(0,0,0,.4);
     }
   }
   :root[data-theme="dark"] {
-    --bg: #101015;
-    --surface: #1a1a22;
-    --surface-2: #23232d;
-    --ink: #f0f0f5;
-    --ink-soft: #b3b3bf;
-    --ink-faint: #7c7c88;
-    --line: #2c2c37;
-    --line-strong: #3a3a47;
-    --accent: #8285f0;
-    --accent-ink: #14141a;
-    --accent-soft: #24243a;
+    --bg: #1a1714;
+    --surface: #24211d;
+    --surface-2: #2d2925;
+    --ink: #f3efe8;
+    --ink-soft: #b4aca2;
+    --ink-faint: #877f75;
+    --line: #34302a;
+    --line-strong: #47423b;
+    --accent: #c69ae0;
+    --accent-ink: #241d29;
+    --accent-soft: #322a38;
+    --hi: #f0b54a;
+    --hi-ink: #2a1b06;
+    --hi-soft: #33291a;
+    --hi-ring: rgba(240,181,74,.34);
     --good: #4cc079;
-    --good-soft: #17311f;
+    --good-soft: #173023;
     --maybe: #e0ab3c;
     --maybe-soft: #322611;
     --no: #e97b77;
-    --no-soft: #37191a;
-    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    --no-soft: #38201d;
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 10px 30px rgba(0,0,0,.4);
   }
 
   * { box-sizing: border-box; }
@@ -239,13 +251,13 @@
     border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; background: var(--surface);
     position: relative;
   }
-  .dcardR.best { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-soft); }
+  .dcardR.best { border-color: var(--hi); box-shadow: 0 0 0 2px var(--hi-ring); background: var(--hi-soft); }
   .dcardR .rtop { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 9px; }
   .dcardR .rday { font-weight: 600; font-size: 15px; }
   .dcardR .rsub { font-size: 12px; color: var(--ink-faint); }
   .badge {
     font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
-    background: var(--accent); color: var(--accent-ink); padding: 3px 8px; border-radius: 999px;
+    background: var(--hi); color: var(--hi-ink); padding: 3px 8px; border-radius: 999px;
   }
   .meter { display: flex; height: 9px; border-radius: 999px; overflow: hidden; background: var(--surface-2); margin-bottom: 9px; }
   .meter i { display: block; height: 100%; }

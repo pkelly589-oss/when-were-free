@@ -19,7 +19,9 @@ Nothing to install, and (in live mode) friends don't need any account.
 
 ### Finding your links again
 
-Every poll you create is saved to a **"Your polls"** list in your browser, shown on the home screen. Reopen the site any time to see your recent polls with buttons to open the **Results** or copy the **Friend link** again — no need to bookmark or dig through history. (The list is per-device, since it's stored in your browser.)
+Every poll you create is saved to a **"Your polls"** list on the home screen, with buttons to open the **Results** or copy the **Friend link** again — no need to bookmark or dig through history.
+
+By default this list lives in the browser you created the poll on. If Google sign-in is set up (see Setup below), a **"Sign in with Google"** button appears on the home screen: sign in and your poll list is tied to your Google account, so it follows you to any device you sign in on. It's optional — signed out, the list still works locally.
 
 Beyond that list, the links are always recoverable because everything about a poll is encoded in its URL:
 
@@ -116,12 +118,17 @@ Live one-click responses need a free Firebase project. This is optional — with
    rules_version = '2';
    service cloud.firestore {
      match /databases/{database}/documents {
+       // Poll responses — open, since friends aren't signed in
        match /responses/{id} {
          allow read: if true;
          allow create, update: if request.resource.data.pollId is string
            && request.resource.data.n is string && request.resource.data.n.size() <= 60
            && request.resource.data.a is string && request.resource.data.a.size() <= 80;
          allow delete: if true;
+       }
+       // Per-organizer "Your polls" list — only that signed-in user can touch theirs
+       match /organizers/{uid} {
+         allow read, write: if request.auth != null && request.auth.uid == uid;
        }
      }
    }
@@ -143,13 +150,23 @@ Live one-click responses need a free Firebase project. This is optional — with
 
 The Firebase `apiKey` is **not a secret** — it only identifies the project. The Firestore security rules above are what actually control access.
 
+### 3. (Optional) Turn on cross-device sync for "Your polls"
+
+This lets the **Your polls** list follow you across devices via Google sign-in. It's optional and only affects the organizer's own convenience list — responses already sync across devices through the organizer link.
+
+1. In the Firebase console: **Authentication → Get started → Sign-in method →** enable **Google**, set a support email, and save.
+2. **Authentication → Settings → Authorized domains → Add domain**, and add your GitHub Pages domain — just the host part, e.g. `your-username.github.io` (not the full path).
+3. Make sure the Firestore rules include the `organizers` block shown above (it's already in the rules in step 2.3).
+
+That's it — a **"Sign in with Google"** button appears on the home screen, and signing in with the same Google account on another device shows the same poll list.
+
 ---
 
 ## Data & privacy
 
 - Responses live in a single Firestore collection called **`responses`**. Each document is one person's answer: `{ pollId, n (name), a (answers), m (note), ts }`. Re-submitting under the same name updates that person's answer.
 - A poll's `pollId` is a short hash of its dates and title, so responses are grouped by poll.
-- Your **"Your polls"** list is kept in your browser (`localStorage`), so it's specific to each device you create or open polls on. Removing a poll from the list doesn't delete the poll or its responses — it just clears the shortcut.
+- Your **"Your polls"** list is kept in your browser (`localStorage`) by default, so it's specific to each device. If you sign in with Google, it's also mirrored to an **`organizers/<your-uid>`** document in Firestore (just poll titles and their links) that only you can read or write — that's what makes it sync across devices. Removing a poll from the list doesn't delete the poll or its responses — it just clears the shortcut.
 - In **relay mode**, the organizer's collected responses are also stored locally in their own browser (`localStorage`), so aggregate from one main device.
 - There are no accounts or emails collected from friends. Anyone with a Friend link can view and submit — fine for a casual group; the short, unguessable `pollId` is the only thing tying responses to a poll.
 

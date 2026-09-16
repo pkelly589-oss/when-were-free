@@ -156,6 +156,11 @@
   .row { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
   .grow { flex: 1 1 auto; min-width: 0; }
 
+  /* auth bar */
+  .authbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .authsigned { display: flex; align-items: center; gap: 10px; }
+  .authwho { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+
   /* your-polls list */
   .pollrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 0; border-top: 1px solid var(--line); }
   .pollrow:first-child { border-top: 0; padding-top: 2px; }
@@ -309,6 +314,13 @@
 
   <!-- ============ CREATE VIEW ============ -->
   <section id="view-create" hidden>
+    <div class="authbar" id="authbar" hidden>
+      <button class="ghost small" id="auth-signin" type="button">Sign in with Google to sync your polls across devices</button>
+      <div id="auth-signed" class="authsigned" hidden>
+        <span class="authwho" id="auth-who"></span>
+        <button class="ghost small" id="auth-signout" type="button">Sign out</button>
+      </div>
+    </div>
     <div class="card" id="mypolls-card" hidden>
       <div class="eyebrow">Your polls</div>
       <h2>Pick up where you left off</h2>
@@ -491,6 +503,10 @@
   var LIVE = false;   // becomes true once Firestore is connected
   var fbdb = null;    // Firestore handle
   var FB_VER = '10.14.1';
+  var authReady = false;      // Google sign-in available
+  var authUser = null;        // current signed-in user (or null)
+  var pollsUnsub = null;      // cloud "your polls" subscription
+  var pollsSyncedInitial = false;
 
   function loadScript(src) {
     return new Promise(function (resolve, reject) {
@@ -509,8 +525,83 @@
         fbdb = firebase.firestore();
         return true;
       })
+      .then(function (ok) {
+        // Auth is optional — its failure must not disable live submit.
+        return loadScript(base + 'firebase-auth-compat.js')
+          .then(function () { setupAuth(); return ok; }, function () { return ok; });
+      })
       .catch(function () { return false; });
   }
+  function setupAuth() {
+    try {
+      authReady = true;
+      firebase.auth().onAuthStateChanged(function (user) {
+        authUser = user || null;
+        pollsSyncedInitial = false;
+        updateAuthUI();
+        if (pollsUnsub) { pollsUnsub(); pollsUnsub = null; }
+        if (authUser && fbdb) {
+          pollsUnsub = fbdb.collection('organizers').doc(authUser.uid).onSnapshot(function (snap) {
+            var cloud = (snap.exists && snap.data() && snap.data().polls) || [];
+            if (!pollsSyncedInitial) {
+              pollsSyncedInitial = true;
+              var merged = mergePolls(loadPolls(), cloud);
+              savePolls(merged);
+              if (JSON.stringify(merged) !== JSON.stringify(cloud)) writeCloudPolls(merged);
+            } else {
+              savePolls(cloud); // cloud is authoritative after the first merge
+            }
+            renderIfCreate();
+          }, function () {});
+        } else {
+          renderIfCreate();
+        }
+      });
+    } catch (e) { authReady = false; }
+  }
+  function mergePolls(a, b) {
+    var map = {};
+    (a || []).concat(b || []).forEach(function (r) {
+      if (!r || !r.p) return;
+      var ex = map[r.p];
+      if (!ex || (r.ts || 0) > (ex.ts || 0)) map[r.p] = r;
+    });
+    return Object.keys(map).map(function (k) { return map[k]; })
+      .sort(function (x, y) { return (y.ts || 0) - (x.ts || 0); });
+  }
+  function writeCloudPolls(list) {
+    if (authUser && fbdb) fbdb.collection('organizers').doc(authUser.uid).set({ polls: list }).catch(function () {});
+  }
+  function renderIfCreate() {
+    if (!document.getElementById('view-create').hidden) renderMyPolls();
+  }
+  function updateAuthUI() {
+    var bar = document.getElementById('authbar');
+    if (!bar) return;
+    if (!LIVE || !authReady) { bar.hidden = true; return; }
+    bar.hidden = false;
+    var inBtn = document.getElementById('auth-signin');
+    var signed = document.getElementById('auth-signed');
+    if (authUser) {
+      inBtn.hidden = true; signed.hidden = false;
+      document.getElementById('auth-who').textContent = 'Synced as ' + (authUser.displayName || authUser.email || 'you');
+    } else {
+      inBtn.hidden = false; signed.hidden = true;
+    }
+  }
+  document.getElementById('auth-signin').onclick = function () {
+    if (!window.firebase || !authReady) { toast('Sign-in isn’t available right now'); return; }
+    firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
+      .then(function () { toast('Signed in — your polls will sync'); })
+      .catch(function (e) {
+        if (e && e.code === 'auth/popup-closed-by-user') return;
+        toast('Sign-in didn’t complete');
+      });
+  };
+  document.getElementById('auth-signout').onclick = function () {
+    if (window.firebase && authReady) firebase.auth().signOut();
+    toast('Signed out');
+  };
   function nameKey(n) {
     return (n || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '_')
       .replace(/^_+|_+$/g, '').slice(0, 40) || 'x';
@@ -703,7 +794,7 @@
   function isoYMD(y, m, d) { return y + '-' + pad2(m + 1) + '-' + pad2(d); }
   function todayMidnight() { var t = new Date(); t.setHours(0, 0, 0, 0); return t; }
 
-  function renderCreate() { renderMyPolls(); renderCalendar(); renderCreateChips(); }
+  function renderCreate() { updateAuthUI(); renderMyPolls(); renderCalendar(); renderCreateChips(); }
 
   // ---------- "Your polls" (saved on this device) ----------
   function loadPolls() { try { return JSON.parse(lsGet('wwf:polls')) || []; } catch (e) { return []; } }
@@ -718,14 +809,17 @@
     list.unshift(rec);
     if (list.length > 40) list = list.slice(0, 40);
     savePolls(list);
+    writeCloudPolls(list);
   }
   function forgetPoll(param) {
-    savePolls(loadPolls().filter(function (x) { return x.p !== param; }));
+    var list = loadPolls().filter(function (x) { return x.p !== param; });
+    savePolls(list);
+    writeCloudPolls(list);
   }
   function renderMyPolls() {
     var card = document.getElementById('mypolls-card');
     var host = document.getElementById('mypolls-list');
-    var list = loadPolls();
+    var list = loadPolls().slice().sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
     card.hidden = list.length === 0;
     host.innerHTML = '';
     list.forEach(function (rec) {

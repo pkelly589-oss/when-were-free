@@ -408,21 +408,12 @@
     </div>
 
     <div class="card" id="r-outcard">
-      <div class="eyebrow" id="r-outeyebrow">Send it back</div>
-      <h2 id="r-outtitle">Your response code</h2>
-      <p class="hint" id="r-outhint">Copy this and send it to the organizer (text, email, wherever). Change your answers above anytime — the code updates.</p>
-      <div id="r-selfblock" hidden>
-        <button class="primary" id="r-addself" type="button" disabled style="width:100%;">Add me to the results →</button>
-        <p class="note" id="r-confirm" hidden style="margin-top:12px;">✓ You're in! The organizer can see your availability now. Change anything above and submit again to update it.</p>
-      </div>
-      <div id="r-codeblock">
-        <div class="out mono" id="r-code" style="margin-bottom:12px;">Add your name and pick your days to generate a code.</div>
-        <div class="row">
-          <button class="primary" data-copy="r-code" id="r-copycode" type="button" disabled>Copy response code</button>
-          <button class="ghost small" data-copy="r-replylink" id="r-copylink" type="button" disabled>Copy reply link instead</button>
-        </div>
-        <div class="out mono" id="r-replylink" hidden></div>
-      </div>
+      <div class="eyebrow" id="r-outeyebrow">Submit</div>
+      <h2 id="r-outtitle">Send in your availability</h2>
+      <p class="hint" id="r-outhint">Mark the days that work and hit submit — the organizer sees it right away. You can change it and submit again anytime.</p>
+      <button class="primary" id="r-addself" type="button" disabled style="width:100%;">Submit my availability →</button>
+      <p class="note" id="r-confirm" hidden style="margin-top:12px;">✓ You're in! The organizer can see your availability now. Change anything above and submit again to update it.</p>
+      <p class="note" id="r-offline" hidden style="margin-top:12px;">Couldn't reach the response database. Open the hosted link (not a preview) and make sure you're online, then try again.</p>
     </div>
     <div class="foot"><button class="link" id="r-toorg" type="button">Are you the organizer? Open the results view</button></div>
   </section>
@@ -449,18 +440,13 @@
     <div class="card">
       <h2 style="font-size:16px;margin-bottom:12px;">Best days</h2>
       <div class="drank" id="o-rank"></div>
-      <div class="empty" id="o-emptyrank" hidden>No responses yet. Paste a friend's code below to get started.</div>
+      <div class="empty" id="o-emptyrank" hidden>No responses yet — share your friend link and they'll show up here the moment someone submits.</div>
     </div>
 
     <div class="card">
-      <div class="eyebrow">Add a response</div>
-      <h2 style="font-size:16px;">Paste a friend's code</h2>
-      <p class="hint">Drop in a code (or reply link) a friend sent you.</p>
-      <textarea id="o-paste" placeholder="Paste code or reply link here…"></textarea>
-      <div class="row" style="margin-top:10px;">
-        <button class="primary small" id="o-import" type="button">Add response</button>
-        <button class="ghost small" id="o-addself" type="button">+ Add my own availability</button>
-      </div>
+      <div class="eyebrow">Your own availability</div>
+      <p class="hint" style="margin-bottom:12px;">Add yourself to the results without opening the friend link separately.</p>
+      <button class="primary small" id="o-addself" type="button">+ Add my own availability</button>
       <div id="o-people-wrap" style="margin-top:16px;" hidden>
         <div class="lab" style="font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:2px;">Responded so far</div>
         <div class="people" id="o-people"></div>
@@ -606,15 +592,12 @@
     return (n || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '_')
       .replace(/^_+|_+$/g, '').slice(0, 40) || 'x';
   }
-  // Write a response to the shared store: Firestore when live, else localStorage.
+  // Write a response to the shared database (requires a live connection).
   function writeResp(pid, resp) {
-    if (LIVE && fbdb) {
-      return fbdb.collection('responses').doc(pid + '__' + nameKey(resp.n)).set({
-        pollId: pid, n: resp.n, a: resp.a, m: resp.m || '', ts: Date.now()
-      });
-    }
-    addToStore(pid, resp);
-    return Promise.resolve();
+    if (!(LIVE && fbdb)) return Promise.reject(new Error('offline'));
+    return fbdb.collection('responses').doc(pid + '__' + nameKey(resp.n)).set({
+      pollId: pid, n: resp.n, a: resp.a, m: resp.m || '', ts: Date.now()
+    });
   }
   function deleteResp(pid, name) {
     if (LIVE && fbdb) return fbdb.collection('responses').doc(pid + '__' + nameKey(name)).delete();
@@ -622,11 +605,7 @@
   }
 
   // ---------- encoding helpers ----------
-  function b64urlEncode(str) {
-    var b = btoa(unescape(encodeURIComponent(str)));
-    return b.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  }
-  function b64urlDecode(s) {
+  function b64urlDecode(s) { // still needed to read older base64-style poll links
     s = s.replace(/-/g, '+').replace(/_/g, '/');
     while (s.length % 4) s += '=';
     return decodeURIComponent(escape(atob(s)));
@@ -959,26 +938,20 @@
   function renderRespond(poll, param, selfMode) {
     respondPoll = poll; respondParam = param; respondPid = pollIdOf(poll); respondSelf = !!selfMode;
     respondChoices = poll.dates.map(function () { return undefined; });
-    var direct = selfMode || LIVE; // direct-write (button) vs. code relay
-    document.getElementById('r-selfblock').hidden = !direct;
-    document.getElementById('r-codeblock').hidden = direct;
     document.getElementById('r-toorg').closest('.foot').hidden = !!selfMode;
     document.getElementById('r-confirm').hidden = true;
+    document.getElementById('r-offline').hidden = !!LIVE;
     var subBtn = document.getElementById('r-addself');
     if (selfMode) {
       document.getElementById('r-outeyebrow').textContent = 'Your availability';
       document.getElementById('r-outtitle').textContent = 'Add yourself';
-      document.getElementById('r-outhint').textContent = 'Mark your own days and drop straight into the results — no code needed.';
+      document.getElementById('r-outhint').textContent = 'Mark your own days and drop straight into the results.';
       subBtn.textContent = 'Add me to the results →';
-    } else if (LIVE) {
+    } else {
       document.getElementById('r-outeyebrow').textContent = 'Submit';
       document.getElementById('r-outtitle').textContent = 'Send in your availability';
       document.getElementById('r-outhint').textContent = 'Mark the days that work and hit submit — the organizer sees it right away. You can change it and submit again anytime.';
       subBtn.textContent = 'Submit my availability →';
-    } else {
-      document.getElementById('r-outeyebrow').textContent = 'Send it back';
-      document.getElementById('r-outtitle').textContent = 'Your response code';
-      document.getElementById('r-outhint').textContent = 'Copy this and send it to the organizer (text, email, wherever). Change your answers above anytime — the code updates.';
     }
     document.getElementById('r-title').textContent = poll.t;
     document.getElementById('r-desc').textContent = poll.d || 'Mark each date below.';
@@ -1063,30 +1036,7 @@
     };
   }
   function updateRespondCode() {
-    var resp = currentRespondResp();
-    var selfBtn = document.getElementById('r-addself');
-    selfBtn.disabled = !resp;
-    if (respondSelf || LIVE) return;
-    var codeEl = document.getElementById('r-code');
-    var copyBtn = document.getElementById('r-copycode');
-    var linkBtn = document.getElementById('r-copylink');
-    var replyEl = document.getElementById('r-replylink');
-    if (!resp) {
-      var name = document.getElementById('r-name').value.trim();
-      var anyMarked = respondChoices.some(function (c) { return c !== undefined; });
-      var missing = [];
-      if (!name) missing.push('add your name');
-      if (!anyMarked) missing.push('mark at least one day');
-      codeEl.textContent = 'Almost there — ' + missing.join(' and ') + ' to generate your code.';
-      copyBtn.disabled = true; linkBtn.disabled = true;
-      replyEl.hidden = true;
-      return;
-    }
-    var code = respondPid + '~' + b64urlEncode(JSON.stringify(resp));
-    codeEl.textContent = code;
-    var reply = orgLink(respondParam) + '&add=' + encodeURIComponent(code);
-    replyEl.textContent = reply;
-    copyBtn.disabled = false; linkBtn.disabled = false;
+    document.getElementById('r-addself').disabled = !currentRespondResp() || !LIVE;
   }
   document.getElementById('r-addself').onclick = function () {
     var resp = currentRespondResp();
@@ -1107,9 +1057,6 @@
       toast('Couldn’t submit — check your connection and try again.');
     });
   };
-  document.getElementById('r-copylink').addEventListener('click', function () {
-    document.getElementById('r-replylink').hidden = false;
-  });
   document.getElementById('r-toorg').onclick = function () {
     if (respondParam) location.hash = 'poll=' + respondParam + '&org=1';
   };
@@ -1118,41 +1065,6 @@
   //  RESULTS / ORGANIZER VIEW
   // ============================================================
   var orgPoll = null, orgParam = null, orgPid = null, orgResponses = [];
-
-  function storeKey() { return 'wwf:' + orgPid; }
-  function loadResponses() {
-    var raw = lsGet(storeKey());
-    if (!raw) { orgResponses = []; return; }
-    try { orgResponses = JSON.parse(raw) || []; } catch (e) { orgResponses = []; }
-  }
-  function saveResponses() { lsSet(storeKey(), JSON.stringify(orgResponses)); }
-  function addToStore(pid, resp) {
-    var key = 'wwf:' + pid, arr = [];
-    try { arr = JSON.parse(lsGet(key)) || []; } catch (e) { arr = []; }
-    var lc = resp.n.toLowerCase();
-    var ex = arr.findIndex(function (r) { return r.n.toLowerCase() === lc; });
-    if (ex >= 0) arr[ex] = resp; else arr.push(resp);
-    lsSet(key, JSON.stringify(arr));
-  }
-
-  function decodeCode(raw) {
-    raw = raw.trim();
-    // allow a full reply link — extract add= param
-    var m = raw.match(/[#&]add=([^&]+)/);
-    if (m) raw = decodeURIComponent(m[1]);
-    var tilde = raw.indexOf('~');
-    if (tilde < 0) return { err: 'That doesn\'t look like a response code.' };
-    var pid = raw.slice(0, tilde);
-    var body = raw.slice(tilde + 1);
-    var obj;
-    try { obj = JSON.parse(b64urlDecode(body)); } catch (e) { return { err: 'Couldn\'t read that code — it may be incomplete.' }; }
-    if (!obj || typeof obj.a !== 'string' || !obj.n) return { err: 'That code is missing some data.' };
-    var mismatch = (pid !== orgPid);
-    if (obj.a.length !== orgPoll.dates.length) {
-      return { err: 'That response was made for a different set of dates. Ask them to use the current friend link.' };
-    }
-    return { resp: { n: String(obj.n).slice(0, 60), a: obj.a, m: (obj.m || '').slice(0, 140) }, mismatch: mismatch };
-  }
 
   var orgUnsub = null;
   function renderResults(poll, param) {
@@ -1164,11 +1076,11 @@
     document.getElementById('o-livehint').hidden = !LIVE;
     document.getElementById('o-emptyrank').textContent = LIVE
       ? 'No responses yet — share your friend link and they’ll show up here the moment someone submits.'
-      : 'No responses yet. Paste a friend’s code below to get started.';
+      : 'Couldn’t reach the response database. Open the hosted link (not a preview) and make sure you’re online.';
     if (orgUnsub) { orgUnsub(); orgUnsub = null; }
+    orgResponses = [];
+    renderRank();
     if (LIVE && fbdb) {
-      orgResponses = [];
-      renderRank();
       orgUnsub = fbdb.collection('responses').where('pollId', '==', orgPid)
         .onSnapshot(function (snap) {
           var arr = [];
@@ -1180,9 +1092,6 @@
           orgResponses = arr;
           renderRank();
         }, function () { toast('Live sync hiccup — showing what loaded.'); });
-    } else {
-      loadResponses();
-      renderRank();
     }
   }
 
@@ -1205,16 +1114,17 @@
                label: (orgPoll.labels && orgPoll.labels[i]) || '' };
     });
 
-    // ranking: most Good, then fewest No, then most Maybe
+    // ranking: most Good, then fewest No, then most Maybe, then earliest date
     var ranked = stats.slice().sort(function (a, b) {
       if (b.g !== a.g) return b.g - a.g;
       if (a.no !== b.no) return a.no - b.no;
-      return b.m - a.m;
+      if (b.m !== a.m) return b.m - a.m;
+      return a.iso < b.iso ? -1 : a.iso > b.iso ? 1 : 0;
     });
     var bestKey = n > 0 ? (ranked[0].g + '|' + ranked[0].no + '|' + ranked[0].m) : null;
 
-    // keep chronological order for display but flag best
-    stats.forEach(function (s) {
+    // display in priority order (best days first)
+    ranked.forEach(function (s) {
       var isBest = n > 0 && (s.g + '|' + s.no + '|' + s.m) === bestKey && s.g > 0;
       var card = document.createElement('div');
       card.className = 'dcardR' + (isBest ? ' best' : '');
@@ -1258,39 +1168,13 @@
       var x = document.createElement('button');
       x.type = 'button'; x.title = 'Remove'; x.textContent = '×';
       x.onclick = function () {
-        if (LIVE && fbdb) {
-          deleteResp(orgPid, r.n).then(function () { toast('Removed ' + r.n); });
-        } else {
-          orgResponses.splice(idx, 1); saveResponses(); renderRank(); toast('Removed');
-        }
+        if (LIVE && fbdb) deleteResp(orgPid, r.n).then(function () { toast('Removed ' + r.n); });
       };
       chip.appendChild(x);
       pl.appendChild(chip);
     });
   }
 
-  function addResponse(resp) {
-    // replace if same name (case-insensitive) already responded
-    var lc = resp.n.toLowerCase();
-    var existing = orgResponses.findIndex(function (r) { return r.n.toLowerCase() === lc; });
-    if (existing >= 0) { orgResponses[existing] = resp; toast('Updated ' + resp.n + '’s response'); }
-    else { orgResponses.push(resp); toast('Added ' + resp.n); }
-    saveResponses(); renderRank();
-  }
-
-  document.getElementById('o-import').onclick = function () {
-    var box = document.getElementById('o-paste');
-    var raw = box.value.trim();
-    if (!raw) { toast('Paste a code first'); box.focus(); return; }
-    var res = decodeCode(raw);
-    if (res.err) { toast(res.err); return; }
-    if (LIVE && fbdb) {
-      writeResp(orgPid, res.resp).then(function () { toast('Added ' + res.resp.n); });
-    } else {
-      addResponse(res.resp);
-    }
-    box.value = '';
-  };
   function buildResultsSummary() {
     if (!orgPoll) return '';
     var n = orgResponses.length;
@@ -1365,13 +1249,6 @@
     if (h.org) {
       renderResults(poll, param);
       show('results');
-      // auto-import a reply link's add= payload
-      if (h.add) {
-        var res = decodeCode(decodeURIComponent(h.add));
-        if (res.err) toast(res.err); else addResponse(res.resp);
-        // clean the add param from the url
-        location.hash = 'poll=' + param + '&org=1';
-      }
       return;
     }
 

@@ -258,6 +258,7 @@
     position: relative;
   }
   .dcardR.best { border-color: var(--hi); box-shadow: 0 0 0 2px var(--hi-ring); background: var(--hi-soft); }
+  .gcal-tile { margin-top: 11px; }
   .dcardR .rtop { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 9px; }
   .dcardR .rday { font-weight: 600; font-size: 15px; }
   .dcardR .rsub { font-size: 12px; color: var(--ink-faint); }
@@ -448,8 +449,7 @@
         <span class="pill" style="margin-left:auto;color:var(--ink-faint);" id="o-count">0 responses</span>
       </div>
       <div class="row" style="margin-top:14px;">
-        <button class="primary small" id="o-gcal" type="button">📅 Create Google Calendar event</button>
-        <button class="ghost small" id="o-copyresults" type="button">📋 Copy results</button>
+        <button class="primary small" id="o-copyresults" type="button">📋 Copy results</button>
       </div>
     </div>
 
@@ -818,6 +818,14 @@
     savePolls(list);
     writeCloudPolls(list);
   }
+  function countResponses(pid) {
+    var q = fbdb.collection('responses').where('pollId', '==', pid);
+    if (typeof q.count === 'function') {
+      return q.count().get().then(function (s) { return s.data().count; },
+        function () { return q.get().then(function (s) { return s.size; }); });
+    }
+    return q.get().then(function (s) { return s.size; });
+  }
   function renderMyPolls() {
     var card = document.getElementById('mypolls-card');
     var host = document.getElementById('mypolls-list');
@@ -831,7 +839,15 @@
       var main = document.createElement('div');
       main.className = 'pollrow-main';
       main.innerHTML = '<div class="pollrow-title">' + escapeHtml(rec.t || 'Untitled') + '</div>' +
-        '<div class="pollrow-sub">' + rec.n + ' date' + (rec.n === 1 ? '' : 's') + (range ? ' · ' + escapeHtml(range) : '') + '</div>';
+        '<div class="pollrow-sub">' + rec.n + ' date' + (rec.n === 1 ? '' : 's') + (range ? ' · ' + escapeHtml(range) : '') +
+        '<span class="pollrow-count"></span></div>';
+      if (LIVE && fbdb && rec.id) {
+        (function (cntEl) {
+          countResponses(rec.id).then(function (c) {
+            cntEl.textContent = ' · ' + c + ' response' + (c === 1 ? '' : 's');
+          }, function () {});
+        })(main.querySelector('.pollrow-count'));
+      }
       var actions = document.createElement('div');
       actions.className = 'pollrow-actions';
       var openBtn = document.createElement('button');
@@ -1206,6 +1222,16 @@
         card.style.cursor = 'pointer';
         card.onclick = function () { card.querySelector('.who').classList.toggle('show'); };
       }
+      if (isBest) {
+        var evBtn = document.createElement('button');
+        evBtn.className = 'primary small gcal-tile';
+        evBtn.type = 'button';
+        evBtn.textContent = '📅 Create calendar event';
+        (function (stat) {
+          evBtn.onclick = function (e) { e.stopPropagation(); openGCal(stat); };
+        })(s);
+        card.appendChild(evBtn);
+      }
       rank.appendChild(card);
     });
 
@@ -1288,31 +1314,16 @@
     if (!orgResponses.length) { toast('No responses yet to copy'); return; }
     copyText(buildResultsSummary(), 'Results copied — paste into Claude');
   };
-  function topDateStat() {
-    var stats = orgPoll.dates.map(function (iso, i) {
-      var g = 0, m = 0, no = 0;
-      orgResponses.forEach(function (r) { var c = r.a.charAt(i); if (c === '2') g++; else if (c === '1') m++; else if (c === '0') no++; });
-      return { iso: iso, i: i, g: g, m: m, no: no };
-    });
-    return stats.sort(function (a, b) {
-      if (b.g !== a.g) return b.g - a.g;
-      if (a.no !== b.no) return a.no - b.no;
-      if (b.m !== a.m) return b.m - a.m;
-      return a.iso < b.iso ? -1 : a.iso > b.iso ? 1 : 0;
-    })[0];
-  }
-  function buildGCalUrl() {
-    if (!orgResponses.length) return null;
-    var top = topDateStat();
-    var ymd = top.iso.replace(/-/g, '');
-    // sensible default: a 6–8pm evening block on the chosen day, in the organizer's timezone
+  // Build an all-day Google Calendar event link for a specific date (a stats entry with .iso and .i)
+  function buildGCalUrl(top) {
+    if (!top || !orgPoll) return null;
+    var start = top.iso.replace(/-/g, '');
+    var end = isoFromDays(daysFromEpoch(top.iso) + 1).replace(/-/g, ''); // all-day: end = next day
     var params = [
       'action=TEMPLATE',
       'text=' + encodeURIComponent(orgPoll.t || 'Get-together'),
-      'dates=' + ymd + 'T180000/' + ymd + 'T200000'
+      'dates=' + start + '/' + end
     ];
-    var tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
-    if (tz) params.push('ctz=' + encodeURIComponent(tz));
     var details = 'Planned with When We’re Free.' + (orgPoll.d ? ' ' + orgPoll.d : '');
     params.push('details=' + encodeURIComponent(details));
     // invite everyone who gave an email and didn't say No to this day
@@ -1320,12 +1331,11 @@
     if (guests.length) params.push('add=' + guests.map(encodeURIComponent).join(','));
     return 'https://calendar.google.com/calendar/render?' + params.join('&');
   }
-  document.getElementById('o-gcal').onclick = function () {
-    if (!orgResponses.length) { toast('No responses yet'); return; }
-    window.open(buildGCalUrl(), '_blank', 'noopener');
-    var g = orgResponses.filter(function (r) { return r.e && r.a.charAt(topDateStat().i) !== '0'; }).length;
+  function openGCal(stat) {
+    window.open(buildGCalUrl(stat), '_blank', 'noopener');
+    var g = orgResponses.filter(function (r) { return r.e && r.a.charAt(stat.i) !== '0'; }).length;
     toast(g ? 'Opening Calendar with ' + g + ' guest' + (g === 1 ? '' : 's') + ' — review & save' : 'Opening Google Calendar — review & save');
-  };
+  }
   document.getElementById('o-addself').onclick = function () {
     // jump to respond view for this poll; they can grab their own code, but simpler: inline prompt
     location.hash = 'poll=' + orgParam + '&self=1';

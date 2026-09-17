@@ -19,7 +19,7 @@ Nothing to install, and (in live mode) friends don't need any account.
 
 ### Finding your links again
 
-Every poll you create is saved to a **"Your polls"** list on the home screen, with buttons to open the **Results** or copy the **Friend link** again — no need to bookmark or dig through history.
+Every poll you create is saved to a **"Your polls"** list on the home screen — each row shows its date range and current **response count**, with buttons to open the **Results** or copy the **Friend link** again — no need to bookmark or dig through history.
 
 By default this list lives in the browser you created the poll on. If Google sign-in is set up (see Setup below), a **"Sign in with Google"** button appears on the home screen: sign in and your poll list is tied to your Google account, so it follows you to any device you sign in on. It's optional — signed out, the list still works locally.
 
@@ -94,7 +94,7 @@ Paste it into a message, your notes, or a Claude chat to hand off the outcome �
 
 ### Creating a calendar event
 
-The results screen also has a **📅 Create Google Calendar event** button. It opens Google Calendar's "new event" screen pre-filled with the event name, an evening block on the **winning date** (in your timezone), and — as guests — everyone who provided an email and didn't say *No* to that day. You review it and hit **Save**, and Google sends the invites. Nothing is created or sent until you save it.
+Each **Best pick** tile on the results screen has its own **📅 Create calendar event** button — so when two days tie for best, you can create the event for whichever one you choose. It opens Google Calendar's "new event" screen pre-filled with the event name, an **all-day** event on that date, and — as guests — everyone who provided an email and didn't say *No* to that day. You review it and hit **Save**, and Google sends the invites. Nothing is created or sent until you save it.
 
 This uses Google Calendar's standard event-link format, so it needs no extra setup or permissions — just that you're signed into Google Calendar in that browser. (Friends without an email on file simply aren't added as guests; you can add them manually before saving.)
 

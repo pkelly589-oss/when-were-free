@@ -160,6 +160,7 @@
   .authbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
   .authsigned { display: flex; align-items: center; gap: 10px; }
   .authwho { font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+  .rauth { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
 
   /* your-polls list */
   .pollrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 0; border-top: 1px solid var(--line); }
@@ -273,6 +274,11 @@
   .who.show { display: block; }
   .who b { color: var(--ink); font-weight: 600; }
 
+  .noterow { padding: 10px 0; border-top: 1px solid var(--line); font-size: 13.5px; line-height: 1.45; }
+  .noterow:first-child { border-top: 0; padding-top: 0; }
+  .noterow b { font-weight: 600; }
+  .noterow .txt { color: var(--ink-soft); }
+
   .people { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
   .person {
     display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600;
@@ -385,7 +391,7 @@
       </div>
     </div>
     <div class="note">
-      <strong>How it works:</strong> each friend opens the friend link, marks their availability, and sends you back a short response code. Paste those codes into your organizer view and everyone gets stacked into one grid with the best day highlighted.
+      <strong>How it works:</strong> each friend opens the friend link, marks their availability, and hits submit. Their responses appear in your organizer view automatically, stacked into one grid with the best day highlighted.
     </div>
   </section>
 
@@ -395,11 +401,22 @@
       <div class="eyebrow">You're invited</div>
       <h2 id="r-title">Pick your availability</h2>
       <p class="hint" id="r-desc"></p>
-      <label class="field">
+      <label class="field" style="margin-bottom:6px;">
         <span class="lab">Your name</span>
         <input type="text" id="r-name" placeholder="e.g. Alex" maxlength="40">
       </label>
-      <p class="hint" style="margin:-4px 0 12px;">Tap the highlighted dates on the calendar. Each tap cycles 👍 Good → 🤔 Maybe → 👎 No → clear. Leave any day blank if it doesn't matter to you.</p>
+      <div class="rauth" id="r-auth" hidden>
+        <button class="ghost small" id="r-auth-signin" type="button">Use my Google account</button>
+        <div id="r-auth-signed" class="authsigned" hidden>
+          <span class="authwho" id="r-auth-who"></span>
+          <button class="link" id="r-auth-signout" type="button" style="font-size:12px;padding:2px 4px;">Not you?</button>
+        </div>
+      </div>
+      <label class="field" style="margin-bottom:6px;">
+        <span class="lab">Email (optional)</span>
+        <input type="email" id="r-email" placeholder="e.g. alex@email.com" maxlength="120" autocomplete="email">
+      </label>
+      <p class="hint" style="margin:2px 0 12px;">Tap the highlighted dates on the calendar. Each tap cycles 👍 Good → 🤔 Maybe → 👎 No → clear. Leave any day blank if it doesn't matter to you.</p>
       <div id="r-dates"></div>
       <label class="field" style="margin-top:6px;">
         <span class="lab">Anything to add? (optional)</span>
@@ -430,10 +447,9 @@
         <span class="pill"><span class="dot no"></span>No</span>
         <span class="pill" style="margin-left:auto;color:var(--ink-faint);" id="o-count">0 responses</span>
       </div>
-      <p class="note" id="o-livehint" hidden style="margin-top:14px;">🟢 <strong>Live mode.</strong> Friends submit straight from their link and appear here automatically — no codes to paste.</p>
       <div class="row" style="margin-top:14px;">
-        <button class="primary small" id="o-copyresults" type="button">📋 Copy results</button>
-        <span class="pill" style="color:var(--ink-faint);">for Claude, notes, or a message</span>
+        <button class="primary small" id="o-gcal" type="button">📅 Create Google Calendar event</button>
+        <button class="ghost small" id="o-copyresults" type="button">📋 Copy results</button>
       </div>
     </div>
 
@@ -441,6 +457,12 @@
       <h2 style="font-size:16px;margin-bottom:12px;">Best days</h2>
       <div class="drank" id="o-rank"></div>
       <div class="empty" id="o-emptyrank" hidden>No responses yet — share your friend link and they'll show up here the moment someone submits.</div>
+    </div>
+
+    <div class="card" id="o-notes-card" hidden>
+      <div class="eyebrow">Notes</div>
+      <h2 style="font-size:16px;margin-bottom:12px;">What people added</h2>
+      <div id="o-notes"></div>
     </div>
 
     <div class="card">
@@ -525,6 +547,7 @@
         authUser = user || null;
         pollsSyncedInitial = false;
         updateAuthUI();
+        updateRespondAuthUI();
         if (pollsUnsub) { pollsUnsub(); pollsUnsub = null; }
         if (authUser && fbdb) {
           pollsUnsub = fbdb.collection('organizers').doc(authUser.uid).onSnapshot(function (snap) {
@@ -596,7 +619,7 @@
   function writeResp(pid, resp) {
     if (!(LIVE && fbdb)) return Promise.reject(new Error('offline'));
     return fbdb.collection('responses').doc(pid + '__' + nameKey(resp.n)).set({
-      pollId: pid, n: resp.n, a: resp.a, m: resp.m || '', ts: Date.now()
+      pollId: pid, n: resp.n, a: resp.a, m: resp.m || '', e: resp.e || '', ts: Date.now()
     });
   }
   function deleteResp(pid, name) {
@@ -960,8 +983,38 @@
     renderRespondCalendar(poll);
     document.getElementById('r-name').oninput = updateRespondCode;
     document.getElementById('r-note').oninput = updateRespondCode;
+    updateRespondAuthUI();
     updateRespondCode();
   }
+  function updateRespondAuthUI() {
+    var box = document.getElementById('r-auth');
+    if (!box) return;
+    if (!authReady) { box.hidden = true; return; }
+    box.hidden = false;
+    var inBtn = document.getElementById('r-auth-signin');
+    var signed = document.getElementById('r-auth-signed');
+    if (authUser) {
+      inBtn.hidden = true; signed.hidden = false;
+      document.getElementById('r-auth-who').textContent = '✓ Signed in as ' + (authUser.displayName || authUser.email || 'you');
+      var nm = document.getElementById('r-name');
+      if (!nm.value.trim() && authUser.displayName) { nm.value = authUser.displayName; updateRespondCode(); }
+      var em = document.getElementById('r-email');
+      if (!em.value.trim() && authUser.email) em.value = authUser.email;
+    } else {
+      inBtn.hidden = false; signed.hidden = true;
+    }
+  }
+  document.getElementById('r-auth-signin').onclick = function () {
+    if (!window.firebase || !authReady) { toast('Sign-in isn’t available right now'); return; }
+    firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
+      .catch(function (e) { if (!(e && e.code === 'auth/popup-closed-by-user')) toast('Sign-in didn’t complete'); });
+  };
+  document.getElementById('r-auth-signout').onclick = function () {
+    if (window.firebase && authReady) firebase.auth().signOut();
+    document.getElementById('r-name').value = '';
+    document.getElementById('r-email').value = '';
+    updateRespondCode();
+  };
   var DOW2 = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
   function renderRespondCalendar(poll) {
     var host = document.getElementById('r-dates');
@@ -1032,7 +1085,8 @@
     return {
       n: name,
       a: respondChoices.map(function (c) { return c === undefined ? '-' : String(c); }).join(''),
-      m: document.getElementById('r-note').value.trim().slice(0, 140)
+      m: document.getElementById('r-note').value.trim().slice(0, 140),
+      e: document.getElementById('r-email').value.trim().slice(0, 120)
     };
   }
   function updateRespondCode() {
@@ -1073,7 +1127,6 @@
     document.getElementById('o-title').textContent = poll.t;
     document.getElementById('o-desc').textContent = poll.d || '';
     document.getElementById('o-desc').hidden = !poll.d;
-    document.getElementById('o-livehint').hidden = !LIVE;
     document.getElementById('o-emptyrank').textContent = LIVE
       ? 'No responses yet — share your friend link and they’ll show up here the moment someone submits.'
       : 'Couldn’t reach the response database. Open the hosted link (not a preview) and make sure you’re online.';
@@ -1086,7 +1139,7 @@
           var arr = [];
           snap.forEach(function (docSnap) {
             var d = docSnap.data();
-            if (d && typeof d.a === 'string' && d.n) arr.push({ n: d.n, a: d.a, m: d.m || '', ts: d.ts || 0 });
+            if (d && typeof d.a === 'string' && d.n) arr.push({ n: d.n, a: d.a, m: d.m || '', e: d.e || '', ts: d.ts || 0 });
           });
           arr.sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
           orgResponses = arr;
@@ -1161,10 +1214,10 @@
     var pl = document.getElementById('o-people');
     wrap.hidden = n === 0;
     pl.innerHTML = '';
-    orgResponses.forEach(function (r, idx) {
+    orgResponses.forEach(function (r) {
       var chip = document.createElement('span');
       chip.className = 'person';
-      chip.innerHTML = escapeHtml(r.n) + (r.m ? ' <span style="color:var(--ink-faint);font-weight:400;">· ' + escapeHtml(r.m) + '</span>' : '');
+      chip.appendChild(document.createTextNode(r.n));
       var x = document.createElement('button');
       x.type = 'button'; x.title = 'Remove'; x.textContent = '×';
       x.onclick = function () {
@@ -1172,6 +1225,19 @@
       };
       chip.appendChild(x);
       pl.appendChild(chip);
+    });
+
+    // notes list (people who left a comment)
+    var notesCard = document.getElementById('o-notes-card');
+    var notesHost = document.getElementById('o-notes');
+    var withNotes = orgResponses.filter(function (r) { return r.m; });
+    notesCard.hidden = withNotes.length === 0;
+    notesHost.innerHTML = '';
+    withNotes.forEach(function (r) {
+      var row = document.createElement('div');
+      row.className = 'noterow';
+      row.innerHTML = '<b>' + escapeHtml(r.n) + '</b> <span class="txt">' + escapeHtml(r.m) + '</span>';
+      notesHost.appendChild(row);
     });
   }
 
@@ -1210,11 +1276,55 @@
       lines.push('• ' + when(s) + ' — ' + parts.join(', '));
     });
     if (best) { lines.push(''); lines.push('Party size (available on best date): ' + best.g.length); }
+    var contacts = orgResponses.filter(function (r) { return r.e; });
+    if (contacts.length) {
+      lines.push('');
+      lines.push('Contacts (opted in):');
+      contacts.forEach(function (r) { lines.push('• ' + r.n + ' — ' + r.e); });
+    }
     return lines.join('\n');
   }
   document.getElementById('o-copyresults').onclick = function () {
     if (!orgResponses.length) { toast('No responses yet to copy'); return; }
     copyText(buildResultsSummary(), 'Results copied — paste into Claude');
+  };
+  function topDateStat() {
+    var stats = orgPoll.dates.map(function (iso, i) {
+      var g = 0, m = 0, no = 0;
+      orgResponses.forEach(function (r) { var c = r.a.charAt(i); if (c === '2') g++; else if (c === '1') m++; else if (c === '0') no++; });
+      return { iso: iso, i: i, g: g, m: m, no: no };
+    });
+    return stats.sort(function (a, b) {
+      if (b.g !== a.g) return b.g - a.g;
+      if (a.no !== b.no) return a.no - b.no;
+      if (b.m !== a.m) return b.m - a.m;
+      return a.iso < b.iso ? -1 : a.iso > b.iso ? 1 : 0;
+    })[0];
+  }
+  function buildGCalUrl() {
+    if (!orgResponses.length) return null;
+    var top = topDateStat();
+    var ymd = top.iso.replace(/-/g, '');
+    // sensible default: a 6–8pm evening block on the chosen day, in the organizer's timezone
+    var params = [
+      'action=TEMPLATE',
+      'text=' + encodeURIComponent(orgPoll.t || 'Get-together'),
+      'dates=' + ymd + 'T180000/' + ymd + 'T200000'
+    ];
+    var tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+    if (tz) params.push('ctz=' + encodeURIComponent(tz));
+    var details = 'Planned with When We’re Free.' + (orgPoll.d ? ' ' + orgPoll.d : '');
+    params.push('details=' + encodeURIComponent(details));
+    // invite everyone who gave an email and didn't say No to this day
+    var guests = orgResponses.filter(function (r) { return r.e && r.a.charAt(top.i) !== '0'; }).map(function (r) { return r.e; });
+    if (guests.length) params.push('add=' + guests.map(encodeURIComponent).join(','));
+    return 'https://calendar.google.com/calendar/render?' + params.join('&');
+  }
+  document.getElementById('o-gcal').onclick = function () {
+    if (!orgResponses.length) { toast('No responses yet'); return; }
+    window.open(buildGCalUrl(), '_blank', 'noopener');
+    var g = orgResponses.filter(function (r) { return r.e && r.a.charAt(topDateStat().i) !== '0'; }).length;
+    toast(g ? 'Opening Calendar with ' + g + ' guest' + (g === 1 ? '' : 's') + ' — review & save' : 'Opening Google Calendar — review & save');
   };
   document.getElementById('o-addself').onclick = function () {
     // jump to respond view for this poll; they can grab their own code, but simpler: inline prompt

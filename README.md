@@ -47,6 +47,10 @@ When you create a poll, the event name, note, dates, and labels are packed into 
 
 Friends see a **Submit** button. Submitting writes their response to a shared Firestore database, and the organizer's results view subscribes to it and updates in real time — no copying, no accounts for friends, and it works across every device.
 
+Friends can optionally tap **"Use my Google account"** to fill in their name — and their email into the optional **Email** field — from their Google account instead of typing them (it uses the same Google sign-in as the organizer sync, so no extra setup). It's entirely optional: signing in only pre-fills those fields, the email field can be left blank, and anyone can just type a name without signing in at all.
+
+When someone provides an email, it's saved on their response and listed under a **Contacts (opted in)** section in the **Copy results** export — handy for a future "email everyone once we pick a date" step. If no one fills it in, that section doesn't appear.
+
 Because responses live in that shared database, collecting them requires a working connection to Firebase. If the page can't reach it (for example, offline, or the preview copy hosted inside Claude, whose sandbox blocks outside database calls), the app says so plainly and disables submitting rather than silently failing. Setting up Firebase is covered under **Setup** below.
 
 ### Marking availability
@@ -87,6 +91,12 @@ Party size (available on best date): 5
 ```
 
 Paste it into a message, your notes, or a Claude chat to hand off the outcome — the date and party size are exactly what a follow-up task (like booking a table) needs.
+
+### Creating a calendar event
+
+The results screen also has a **📅 Create Google Calendar event** button. It opens Google Calendar's "new event" screen pre-filled with the event name, an evening block on the **winning date** (in your timezone), and — as guests — everyone who provided an email and didn't say *No* to that day. You review it and hit **Save**, and Google sends the invites. Nothing is created or sent until you save it.
+
+This uses Google Calendar's standard event-link format, so it needs no extra setup or permissions — just that you're signed into Google Calendar in that browser. (Friends without an email on file simply aren't added as guests; you can add them manually before saving.)
 
 ---
 
@@ -160,7 +170,7 @@ That's it — a **"Sign in with Google"** button appears on the home screen, and
 
 ## Data & privacy
 
-- Responses live in a single Firestore collection called **`responses`**. Each document is one person's answer: `{ pollId, n (name), a (answers), m (note), ts }`. Re-submitting under the same name updates that person's answer.
+- Responses live in a single Firestore collection called **`responses`**. Each document is one person's answer: `{ pollId, n (name), a (answers), m (note), e (email — only if they provided one), ts }`. Re-submitting under the same name updates that person's answer. The email is opt-in: it's blank unless the friend typed it or signed in with Google, and it's only shown to the organizer in the Copy results export.
 - A poll's `pollId` is a short hash of its dates and title, so responses are grouped by poll.
 - Your **"Your polls"** list is kept in your browser (`localStorage`) by default, so it's specific to each device. If you sign in with Google, it's also mirrored to an **`organizers/<your-uid>`** document in Firestore (just poll titles and their links) that only you can read or write — that's what makes it sync across devices. Removing a poll from the list doesn't delete the poll or its responses — it just clears the shortcut.
 - There are no accounts or emails collected from friends. Anyone with a Friend link can view and submit — fine for a casual group; the short, unguessable `pollId` is the only thing tying responses to a poll.

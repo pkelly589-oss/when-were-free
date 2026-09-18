@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>When We're Free</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗓️</text></svg>">
 <style>
   :root {
     --bg: #f7f4ef;
@@ -508,6 +509,10 @@
   };
   */
 
+  // Optional Firebase App Check (anti-abuse). Paste your reCAPTCHA v3 site
+  // key here to turn it on; leave null and App Check stays off.
+  var APPCHECK_SITE_KEY = null;
+
   var LIVE = false;   // becomes true once Firestore is connected
   var fbdb = null;    // Firestore handle
   var FB_VER = '10.14.1';
@@ -527,9 +532,13 @@
     if (!FIREBASE_CONFIG) return Promise.resolve(false);
     var base = 'https://www.gstatic.com/firebasejs/' + FB_VER + '/';
     return loadScript(base + 'firebase-app-compat.js')
+      .then(function () { return APPCHECK_SITE_KEY ? loadScript(base + 'firebase-app-check-compat.js') : null; })
       .then(function () { return loadScript(base + 'firebase-firestore-compat.js'); })
       .then(function () {
         firebase.initializeApp(FIREBASE_CONFIG);
+        if (APPCHECK_SITE_KEY) {
+          try { firebase.appCheck().activate(APPCHECK_SITE_KEY, true); } catch (e) {}
+        }
         fbdb = firebase.firestore();
         return true;
       })
@@ -1324,7 +1333,9 @@
       'text=' + encodeURIComponent(orgPoll.t || 'Get-together'),
       'dates=' + start + '/' + end
     ];
-    var details = 'Planned with When We’re Free.' + (orgPoll.d ? ' ' + orgPoll.d : '');
+    var signature = '<i>Planned with <b>When We’re Free</b></i>';
+    var note = (orgPoll.d || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    var details = note ? (note + '<br><br>' + signature) : signature;
     params.push('details=' + encodeURIComponent(details));
     // invite everyone who gave an email and didn't say No to this day
     var guests = orgResponses.filter(function (r) { return r.e && r.a.charAt(top.i) !== '0'; }).map(function (r) { return r.e; });

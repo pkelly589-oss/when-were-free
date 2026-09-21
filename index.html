@@ -100,10 +100,13 @@
   h1, h2, h3 { font-family: 'Bricolage Grotesque', 'Inter', sans-serif; font-weight: 700; line-height: 1.12; text-wrap: balance; margin: 0; }
   .mono { font-family: 'Space Mono', ui-monospace, 'SFMono-Regular', monospace; }
 
-  header.app {
-    display: flex; align-items: center; gap: 11px;
-    padding: 6px 2px 20px;
+  header.app { padding: 6px 2px 20px; }
+  .applink {
+    display: inline-flex; align-items: center; gap: 11px;
+    text-decoration: none; color: inherit; border-radius: 12px;
   }
+  .applink:hover .name { text-decoration: underline; text-underline-offset: 2px; }
+  .applink:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   .logo {
     width: 40px; height: 40px; border-radius: 11px; flex: 0 0 auto;
     background: var(--accent); color: var(--accent-ink);
@@ -294,6 +297,11 @@
   a.tlink { color: var(--accent); font-weight: 600; text-decoration: none; }
   a.tlink:hover { text-decoration: underline; }
   .foot { text-align: center; color: var(--ink-faint); font-size: 12px; margin-top: 26px; }
+  .sitefoot {
+    text-align: center; font-size: 12px; color: var(--ink-faint);
+    margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--line); line-height: 1.5;
+  }
+  .sitefoot strong { color: var(--ink-soft); font-weight: 600; }
   [hidden] { display: none !important; }
   @media (max-width: 430px) {
     .rcal-day { min-height: 44px; }
@@ -313,11 +321,13 @@
 <body>
 <div class="wrap">
   <header class="app">
-    <div class="logo">W</div>
-    <div>
-      <div class="name">When We're Free</div>
-      <div class="sub">Find a day that works for the whole crew</div>
-    </div>
+    <a href="./" class="applink" id="homelink" title="Back to start">
+      <div class="logo">W</div>
+      <div>
+        <div class="name">When We're Free</div>
+        <div class="sub">Find a day that works for the whole crew</div>
+      </div>
+    </a>
   </header>
 
   <!-- ============ CREATE VIEW ============ -->
@@ -403,6 +413,7 @@
       <div class="eyebrow">You're invited</div>
       <h2 id="r-title">Pick your availability</h2>
       <p class="hint" id="r-desc"></p>
+      <p class="note" style="margin-bottom:16px;">🔒 No account needed. We only keep what you enter here — your name, the days you pick, and anything optional you add — so the organizer can see who's free.</p>
       <label class="field" style="margin-bottom:6px;">
         <span class="lab">Your name</span>
         <input type="text" id="r-name" placeholder="e.g. Alex" maxlength="40">
@@ -478,7 +489,9 @@
     <div class="foot"><button class="link" id="o-share" type="button">Need the friend link again? Copy it</button></div>
   </section>
 
-  <div class="foot" id="global-foot" hidden></div>
+  <footer class="sitefoot">
+    Made by <strong>Pete Kelly</strong> to wrangle his friends' calendars.
+  </footer>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1388,6 +1401,12 @@
     show('respond');
   }
 
+  document.getElementById('homelink').onclick = function (e) {
+    e.preventDefault();
+    if (!location.hash) return; // already home
+    if (history.replaceState) { history.replaceState(null, '', location.pathname + location.search); route(); }
+    else { location.hash = ''; }
+  };
   window.addEventListener('hashchange', route);
   initFirebase().then(function (ok) { LIVE = ok; route(); });
 })();

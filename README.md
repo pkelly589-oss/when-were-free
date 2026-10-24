@@ -23,11 +23,11 @@ Every poll you create is saved to a **"Your polls"** list on the home screen —
 
 By default this list lives in the browser you created the poll on. If Google sign-in is set up (see Setup below), a **"Sign in with Google"** button appears on the home screen: sign in and your poll list is tied to your Google account, so it follows you to any device you sign in on. It's optional — signed out, the list still works locally.
 
-Beyond that list, the links are always recoverable because everything about a poll is encoded in its URL:
+Beyond that list, links stay recoverable:
 
 - **Bookmark** the organizer link and open it any time; its results view has a button to copy the friend link again.
 - Either link leads to the other — the friend screen has an *"Are you the organizer?"* link, and the results screen has a *copy friend link* button.
-- Worst case, **recreate the poll with the same name and dates**: you'll get the identical links back, and in live mode it reconnects to the responses friends already submitted (responses are tied to the name + dates, not to the link).
+- Worst case, **recreate the poll with the same name and dates**: responses are tied to the poll's name + dates (not to the link or short id), so a fresh poll with the same name and dates reconnects to the responses friends already submitted. (You'll get a new short link, but it points at the same responses.)
 
 ---
 
@@ -35,13 +35,15 @@ Beyond that list, the links are always recoverable because everything about a po
 
 ### One file, two "screens" driven by the URL
 
-All state needed to render a poll travels in the URL's `#hash`, so the same `index.html` serves every screen:
+A short code in the URL's `#hash` tells the same `index.html` which screen to show and which poll to load:
 
 - **No hash** → the *Create* screen (build a new poll).
-- `#poll=…` → the *Friend* screen (mark availability).
-- `#poll=…&org=1` → the *Organizer* screen (see results).
+- `#p=<id>` → the *Friend* screen (mark availability).
+- `#p=<id>&org=1` → the *Organizer* screen (see results).
 
-When you create a poll, the event name, note, dates, and labels are packed into a compact token in the hash. Dates are stored as small day-offsets from an anchor date (rather than full `YYYY-MM-DD` strings) and text is URL-encoded, which keeps the shareable links short.
+When you create a poll, its event name, note, dates, and labels are saved to the database as a small `polls/<id>` document, and the link only carries the short, random `<id>` — so a shareable link looks like `…/when-were-free/#p=k7bq9xm`, short enough to text or read aloud.
+
+**Legacy self-contained links still work.** Earlier versions packed the entire poll (dates as small day-offsets from an anchor date, text URL-encoded) directly into a `#poll=…` token with no database lookup. Those older links keep opening correctly — the app detects the long format and decodes it in place. If the database can't be reached at the moment you create a poll, the app automatically falls back to generating one of these self-contained `#poll=…` links instead, so you can always share *something*.
 
 ### How responses come in
 
@@ -69,6 +71,10 @@ Leaving a day blank counts as **"no reply"** — it never hurts or helps that da
 ### Picking the best day
 
 Each date is scored across everyone who responded, ranked by **most 👍, then fewest 👎, then most 🤔** (ties broken by the earliest date). A single "No" doesn't rule a date out, but it does count against it. On the results screen the dates are listed **best-first**, and the top one gets a **Best pick** badge. The organizer can tap any date to see exactly who said what.
+
+### Seeing it on a calendar
+
+Above the ranked list, the organizer view also shows a **calendar view** of the candidate dates. Each candidate day is shaded green by how many people are **available** (the number is printed right on the day), so the deepest-green days jump out at a glance. The best pick is ringed in **blue with a ★**, and any day someone marked **No** gets a red marker so conflicts are easy to spot. Tapping a day in the calendar scrolls down to that date's card and opens its who-said-what breakdown. (Blue is used for the best pick specifically so it never gets confused with the amber "Maybe" shading.)
 
 ### Exporting the results
 
@@ -132,6 +138,14 @@ Responses are stored in a free Firebase Firestore database, so the app needs a F
            && request.resource.data.a is string && request.resource.data.a.size() <= 400;
          allow delete: if true;
        }
+       // Saved poll configs for short links (#p=<id>) — readable by anyone with
+       // the link, creatable without signing in, never editable or deletable
+       match /polls/{id} {
+         allow read: if true;
+         allow create: if request.resource.data.e is string
+           && request.resource.data.e.size() <= 4000;
+         allow update, delete: if false;
+       }
        // Per-organizer "Your polls" list — only that signed-in user can touch theirs
        match /organizers/{uid} {
          allow read, write: if request.auth != null && request.auth.uid == uid;
@@ -172,6 +186,7 @@ That's it — a **"Sign in with Google"** button appears on the home screen, and
 
 - Responses live in a single Firestore collection called **`responses`**. Each document is one person's answer: `{ pollId, n (name), a (answers), m (note), e (email — only if they provided one), ts }`. Re-submitting under the same name updates that person's answer. The email is opt-in: it's blank unless the friend typed it or signed in with Google, and it's only shown to the organizer in the Copy results export.
 - A poll's `pollId` is a short hash of its dates and title, so responses are grouped by poll.
+- A poll's configuration (name, note, dates, labels) is saved to a **`polls/<id>`** document so links can stay short (`#p=<id>`). Each holds only the encoded poll in a field `e`; the `<id>` is a random, unguessable code. These documents are readable by anyone with the link and are never editable or deletable once created, so a shared link can't be altered out from under you.
 - Your **"Your polls"** list is kept in your browser (`localStorage`) by default, so it's specific to each device. If you sign in with Google, it's also mirrored to an **`organizers/<your-uid>`** document in Firestore (just poll titles and their links) that only you can read or write — that's what makes it sync across devices. Removing a poll from the list doesn't delete the poll or its responses — it just clears the shortcut.
 - There are no accounts or emails collected from friends. Anyone with a Friend link can view and submit — fine for a casual group; the short, unguessable `pollId` is the only thing tying responses to a poll.
 

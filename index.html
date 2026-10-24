@@ -19,10 +19,10 @@
     --accent: #7a3f97;
     --accent-ink: #ffffff;
     --accent-soft: #f2ebf5;
-    --hi: #e5a01f;
-    --hi-ink: #3a2708;
-    --hi-soft: #fdf4e3;
-    --hi-ring: rgba(229,160,31,.32);
+    --hi: #2f6fd0;
+    --hi-ink: #ffffff;
+    --hi-soft: #e9f0fb;
+    --hi-ring: rgba(47,111,208,.40);
     --good: #2e9e5b;
     --good-soft: #e4f3e9;
     --maybe: #bd7a14;
@@ -45,10 +45,10 @@
       --accent: #c69ae0;
       --accent-ink: #241d29;
       --accent-soft: #322a38;
-      --hi: #f0b54a;
-      --hi-ink: #2a1b06;
-      --hi-soft: #33291a;
-      --hi-ring: rgba(240,181,74,.34);
+      --hi: #6aa3f0;
+      --hi-ink: #0f1b2e;
+      --hi-soft: #182738;
+      --hi-ring: rgba(106,163,240,.40);
       --good: #4cc079;
       --good-soft: #173023;
       --maybe: #e0ab3c;
@@ -70,10 +70,10 @@
     --accent: #c69ae0;
     --accent-ink: #241d29;
     --accent-soft: #322a38;
-    --hi: #f0b54a;
-    --hi-ink: #2a1b06;
-    --hi-soft: #33291a;
-    --hi-ring: rgba(240,181,74,.34);
+    --hi: #6aa3f0;
+    --hi-ink: #0f1b2e;
+    --hi-soft: #182738;
+    --hi-ring: rgba(106,163,240,.40);
     --good: #4cc079;
     --good-soft: #173023;
     --maybe: #e0ab3c;
@@ -262,6 +262,29 @@
     position: relative;
   }
   .dcardR.best { border-color: var(--hi); box-shadow: 0 0 0 2px var(--hi-ring); background: var(--hi-soft); }
+  @keyframes flashpick { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); } }
+  .dcardR.flash { animation: flashpick 1.2s ease; }
+  @keyframes wwfspin { to { transform: rotate(360deg); } }
+  .wwf-spin { width: 34px; height: 34px; margin: 6px auto 0; border-radius: 50%;
+    border: 3px solid var(--line-strong); border-top-color: var(--accent); animation: wwfspin .8s linear infinite; }
+
+  /* results calendar (availability heatmap) */
+  .ocal { margin-bottom: 10px; }
+  .ocal-day { min-height: 50px; border: 1.5px solid transparent; border-radius: 9px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; position: relative; background: var(--surface-2); }
+  .ocal-day.off { background: transparent; color: var(--ink-faint); opacity: .4; }
+  .ocal-day.cand { border-color: var(--line-strong); cursor: pointer; }
+  .ocal-day.cand:hover { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .ocal-day .d { font-weight: 700; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  .ocal-day .c { font-size: 10px; font-weight: 600; color: var(--good); line-height: 1; }
+  .ocal-day.best { border-color: var(--hi); box-shadow: 0 0 0 2px var(--hi-ring); }
+  .ocal-day.best .star { position: absolute; top: -7px; right: -4px; font-size: 12px; color: var(--hi); }
+  .ocal-day.contested::before { content: ''; position: absolute; top: 4px; left: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--no); }
+  .ocallegend { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-soft); margin: 2px 0 14px; }
+  .ocallegend .scale { display: inline-flex; }
+  .ocallegend .scale i { width: 18px; height: 11px; display: block; }
+  .ocallegend .scale i:first-child { border-radius: 3px 0 0 3px; }
+  .ocallegend .scale i:last-child { border-radius: 0 3px 3px 0; }
+  .ocallegend .nodot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--no); vertical-align: middle; }
   .gcal-tile { margin-top: 11px; }
   .dcardR .rtop { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 9px; }
   .dcardR .rday { font-weight: 600; font-size: 15px; }
@@ -378,6 +401,18 @@
     </div>
   </section>
 
+  <!-- ============ LOADING / NOT-FOUND VIEW (short links) ============ -->
+  <section id="view-load" hidden>
+    <div class="card" style="text-align:center;">
+      <div id="load-spin" class="wwf-spin" aria-hidden="true"></div>
+      <h2 id="load-title" style="margin-top:14px;">Loading poll…</h2>
+      <p class="hint" id="load-msg">Fetching the details for this poll.</p>
+      <div class="row" id="load-actions" style="justify-content:center;margin-top:8px;" hidden>
+        <button class="primary small" id="load-home" type="button">Create a new poll</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ SHARE / LINKS VIEW (after create) ============ -->
   <section id="view-links" hidden>
     <div class="card">
@@ -463,6 +498,14 @@
       <div class="row" style="margin-top:14px;">
         <button class="primary small" id="o-copyresults" type="button">📋 Copy results</button>
       </div>
+    </div>
+
+    <div class="card" id="o-calcard" hidden>
+      <div class="eyebrow">Calendar view</div>
+      <h2 style="font-size:16px;margin-bottom:4px;">At a glance</h2>
+      <p class="hint" style="margin-bottom:0;">Shaded by how many people are free each day. Tap a day to jump to it.</p>
+      <div class="ocallegend" id="o-callegend"></div>
+      <div id="o-cal"></div>
     </div>
 
     <div class="card">
@@ -664,6 +707,51 @@
     return hashStr(poll.dates.join('|') + '#' + (poll.t || '')).slice(0, 6);
   }
 
+  // ---------- short links (poll config saved in the database) ----------
+  // A short link is #p=<id>; the full poll config lives in polls/<id>.
+  // Legacy #poll=<blob> links (config packed in the URL) still work below.
+  var ID_ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789'; // no l/o/0/1 — easy to read
+  function randId(n) {
+    n = n || 7;
+    var out = '';
+    try {
+      var buf = new Uint8Array(n);
+      (window.crypto || window.msCrypto).getRandomValues(buf);
+      for (var i = 0; i < n; i++) out += ID_ALPHABET[buf[i] % ID_ALPHABET.length];
+      return out;
+    } catch (e) {
+      for (var j = 0; j < n; j++) out += ID_ALPHABET[Math.floor(Math.random() * ID_ALPHABET.length)];
+      return out;
+    }
+  }
+  // Create a polls/<id> doc holding the encoded config; resolves with the id.
+  function createPollDoc(poll, blob, tries) {
+    if (!(LIVE && fbdb)) return Promise.reject(new Error('offline'));
+    tries = tries || 0;
+    var id = randId();
+    var ref = fbdb.collection('polls').doc(id);
+    return ref.get().then(function (snap) {
+      if (snap.exists) {
+        if (tries < 3) return createPollDoc(poll, blob, tries + 1);
+        throw new Error('id-collision');
+      }
+      return ref.set({ e: blob, t: (poll.t || '').slice(0, 120), ts: Date.now() }).then(function () { return id; });
+    });
+  }
+  // Fetch the encoded config for a short id; resolves with the blob (or null).
+  function loadPollDoc(id) {
+    if (!(LIVE && fbdb)) return Promise.reject(new Error('offline'));
+    return fbdb.collection('polls').doc(id).get().then(function (snap) {
+      return (snap.exists && snap.data() && snap.data().e) || null;
+    });
+  }
+  // Normalize a stored "Your polls" ref: new records keep a full "p=…"/"poll=…"
+  // ref; legacy records stored a bare blob (no "="), so prefix it.
+  function refOf(p) {
+    if (!p) return '';
+    return p.indexOf('=') >= 0 ? p : ('poll=' + p);
+  }
+
   // Compact poll encoding: dates -> anchor day + small offsets, short keys.
   // Halves link length vs. embedding full ISO strings, no dependencies.
   var EPOCH = Date.UTC(2020, 0, 1);
@@ -782,7 +870,7 @@
   });
 
   // ---------- routing ----------
-  var VIEWS = ['create', 'links', 'respond', 'results'];
+  var VIEWS = ['create', 'load', 'links', 'respond', 'results'];
   function show(v) {
     VIEWS.forEach(function (name) {
       document.getElementById('view-' + name).hidden = (name !== v);
@@ -801,8 +889,9 @@
     });
     return out;
   }
-  function friendLink(pollParam) { return baseUrl() + '#poll=' + pollParam; }
-  function orgLink(pollParam) { return baseUrl() + '#poll=' + pollParam + '&org=1'; }
+  // ref is the hash fragment identifying a poll: "p=<id>" or "poll=<blob>".
+  function friendLink(ref) { return baseUrl() + '#' + ref; }
+  function orgLink(ref) { return baseUrl() + '#' + ref + '&org=1'; }
 
   // ============================================================
   //  CREATE VIEW
@@ -874,10 +963,10 @@
       actions.className = 'pollrow-actions';
       var openBtn = document.createElement('button');
       openBtn.className = 'primary small'; openBtn.type = 'button'; openBtn.textContent = 'Results';
-      openBtn.onclick = function () { location.hash = 'poll=' + rec.p + '&org=1'; };
+      openBtn.onclick = function () { location.hash = refOf(rec.p) + '&org=1'; };
       var copyBtn = document.createElement('button');
       copyBtn.className = 'ghost small'; copyBtn.type = 'button'; copyBtn.textContent = 'Friend link';
-      copyBtn.onclick = function () { copyText(friendLink(rec.p), 'Friend link copied'); };
+      copyBtn.onclick = function () { copyText(friendLink(refOf(rec.p)), 'Friend link copied'); };
       var del = document.createElement('button');
       del.className = 'ghost small x'; del.type = 'button'; del.title = 'Remove from this list'; del.textContent = '✕';
       del.onclick = function () { forgetPoll(rec.p); renderMyPolls(); toast('Removed from list'); };
@@ -969,24 +1058,40 @@
       dates: createDates.map(function (x) { return x.iso; }),
       labels: createDates.map(function (x) { return x.label || ''; })
     };
-    var param = encodePoll(poll);
-    rememberPoll(poll, param);
-    location.hash = 'poll=' + param + '&org=1&made=1';
-    // reset the form so the next new poll starts clean
-    createDates.length = 0;
-    document.getElementById('c-title').value = '';
-    document.getElementById('c-desc').value = '';
+    var blob = encodePoll(poll);
+    var longRef = 'poll=' + blob;
+    var btn = this, prev = btn.textContent;
+    function finish(ref) {
+      rememberPoll(poll, ref);
+      location.hash = ref + '&org=1&made=1';
+      // reset the form so the next new poll starts clean
+      createDates.length = 0;
+      document.getElementById('c-title').value = '';
+      document.getElementById('c-desc').value = '';
+      btn.disabled = false; btn.textContent = prev;
+    }
+    if (LIVE && fbdb) {
+      btn.disabled = true; btn.textContent = 'Creating…';
+      createPollDoc(poll, blob).then(function (id) {
+        finish('p=' + id);
+      }, function () {
+        // database unreachable — fall back to a self-contained (long) link
+        finish(longRef);
+      });
+    } else {
+      finish(longRef);
+    }
   };
 
   // ============================================================
   //  LINKS VIEW
   // ============================================================
-  function renderLinks(poll, param) {
+  function renderLinks(poll, ref) {
     document.getElementById('l-title').textContent = poll.t + ' — links ready';
-    document.getElementById('l-friend').textContent = friendLink(param);
-    document.getElementById('l-org').textContent = orgLink(param);
+    document.getElementById('l-friend').textContent = friendLink(ref);
+    document.getElementById('l-org').textContent = orgLink(ref);
     document.getElementById('l-goresults').onclick = function () {
-      location.hash = 'poll=' + param + '&org=1';
+      location.hash = ref + '&org=1';
     };
   }
 
@@ -996,8 +1101,8 @@
   var respondPoll = null, respondParam = null, respondPid = null, respondSelf = false;
   var respondChoices = []; // per date: 2/1/0/undefined
 
-  function renderRespond(poll, param, selfMode) {
-    respondPoll = poll; respondParam = param; respondPid = pollIdOf(poll); respondSelf = !!selfMode;
+  function renderRespond(poll, ref, selfMode) {
+    respondPoll = poll; respondParam = ref; respondPid = pollIdOf(poll); respondSelf = !!selfMode;
     respondChoices = poll.dates.map(function () { return undefined; });
     document.getElementById('r-toorg').closest('.foot').hidden = !!selfMode;
     document.getElementById('r-confirm').hidden = true;
@@ -1137,7 +1242,7 @@
     btn.disabled = true; btn.textContent = 'Saving…';
     writeResp(pollIdOf(respondPoll), resp).then(function () {
       if (respondSelf) {
-        location.hash = 'poll=' + respondParam + '&org=1';
+        location.hash = respondParam + '&org=1';
       } else {
         btn.disabled = false;
         btn.textContent = 'Update my availability →';
@@ -1150,7 +1255,7 @@
     });
   };
   document.getElementById('r-toorg').onclick = function () {
-    if (respondParam) location.hash = 'poll=' + respondParam + '&org=1';
+    if (respondParam) location.hash = respondParam + '&org=1';
   };
 
   // ============================================================
@@ -1159,9 +1264,9 @@
   var orgPoll = null, orgParam = null, orgPid = null, orgResponses = [];
 
   var orgUnsub = null;
-  function renderResults(poll, param) {
-    orgPoll = poll; orgParam = param; orgPid = pollIdOf(poll);
-    rememberPoll(poll, param); // so opening an organizer link also saves it on this device
+  function renderResults(poll, ref) {
+    orgPoll = poll; orgParam = ref; orgPid = pollIdOf(poll);
+    rememberPoll(poll, ref); // so opening an organizer link also saves it on this device
     document.getElementById('o-title').textContent = poll.t;
     document.getElementById('o-desc').textContent = poll.d || '';
     document.getElementById('o-desc').hidden = !poll.d;
@@ -1186,6 +1291,69 @@
     }
   }
 
+  function heatBg(frac) {
+    var pct = Math.round((0.12 + 0.80 * frac) * 100);
+    return 'color-mix(in srgb, var(--good) ' + pct + '%, var(--surface))';
+  }
+  function renderResultsCalendar(stats, bestKey, n) {
+    var card = document.getElementById('o-calcard');
+    var host = document.getElementById('o-cal');
+    if (!card || !host) return;
+    card.hidden = (n === 0);
+    host.innerHTML = '';
+    if (n === 0) return;
+    var lg = document.getElementById('o-callegend');
+    if (lg && !lg.getAttribute('data-built')) {
+      var sc = '';
+      [0, 0.25, 0.5, 0.75, 1].forEach(function (f) { sc += '<i style="background:' + heatBg(f) + '"></i>'; });
+      lg.innerHTML = '<span>fewer free</span><span class="scale">' + sc + '</span><span>more free</span>' +
+        '<span style="margin-left:auto;"><span style="color:var(--hi);font-weight:700;">★</span> best &nbsp; <span class="nodot"></span> has a &ldquo;no&rdquo;</span>';
+      lg.setAttribute('data-built', '1');
+    }
+    var byIso = {};
+    stats.forEach(function (s) { byIso[s.iso] = s; });
+    var months = {};
+    orgPoll.dates.forEach(function (iso) { var p = iso.split('-'); months[p[0] + '-' + p[1]] = true; });
+    Object.keys(months).sort().forEach(function (mk) {
+      var p = mk.split('-'), y = +p[0], mo = +p[1] - 1;
+      var startDow = new Date(y, mo, 1).getDay();
+      var daysIn = new Date(y, mo + 1, 0).getDate();
+      var cells = '';
+      for (var b = 0; b < startDow; b++) cells += '<div class="ocal-day off"></div>';
+      for (var day = 1; day <= daysIn; day++) {
+        var iso = isoYMD(y, mo, day);
+        var s = byIso[iso];
+        if (s) {
+          var frac = s.g / n;
+          var isBest = (s.g + '|' + s.no + '|' + s.m) === bestKey && s.g > 0;
+          var light = frac > 0.55;
+          cells += '<div class="ocal-day cand' + (isBest ? ' best' : '') + (s.no > 0 ? ' contested' : '') +
+            '" data-i="' + s.i + '" style="background:' + heatBg(frac) + '">' +
+            '<span class="d"' + (light ? ' style="color:#fff"' : '') + '>' + day + '</span>' +
+            '<span class="c"' + (light ? ' style="color:rgba(255,255,255,.92)"' : '') + '>' + s.g + ' free</span>' +
+            (isBest ? '<span class="star">★</span>' : '') + '</div>';
+        } else {
+          cells += '<div class="ocal-day off">' + day + '</div>';
+        }
+      }
+      var cal = document.createElement('div');
+      cal.className = 'cal ocal';
+      cal.innerHTML =
+        '<div class="cal-head" style="justify-content:center;"><div class="cal-title">' + MONF[mo] + ' ' + y + '</div></div>' +
+        '<div class="cal-dow">' + DOW2.map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div>' +
+        '<div class="cal-grid">' + cells + '</div>';
+      host.appendChild(cal);
+    });
+    host.querySelectorAll('.ocal-day.cand').forEach(function (cell) {
+      cell.onclick = function () {
+        var t = document.getElementById('dcard-' + cell.getAttribute('data-i'));
+        if (!t) return;
+        var w = t.querySelector('.who'); if (w) w.classList.add('show');
+        t.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash');
+      };
+    });
+  }
   function renderRank() {
     var n = orgResponses.length;
     document.getElementById('o-count').textContent = n + (n === 1 ? ' response' : ' responses');
@@ -1219,6 +1387,7 @@
       var isBest = n > 0 && (s.g + '|' + s.no + '|' + s.m) === bestKey && s.g > 0;
       var card = document.createElement('div');
       card.className = 'dcardR' + (isBest ? ' best' : '');
+      card.id = 'dcard-' + s.i;
       var answered = s.g + s.m + s.no;
       var total = Math.max(1, answered);
       var who = orgResponses.map(function (r) {
@@ -1256,6 +1425,8 @@
       }
       rank.appendChild(card);
     });
+
+    renderResultsCalendar(stats, bestKey, n);
 
     // people list
     var wrap = document.getElementById('o-people-wrap');
@@ -1361,8 +1532,8 @@
     toast(g ? 'Opening Calendar with ' + g + ' guest' + (g === 1 ? '' : 's') + ' — review & save' : 'Opening Google Calendar — review & save');
   }
   document.getElementById('o-addself').onclick = function () {
-    // jump to respond view for this poll; they can grab their own code, but simpler: inline prompt
-    location.hash = 'poll=' + orgParam + '&self=1';
+    // jump to respond view for this poll so the organizer can add their own availability
+    location.hash = orgParam + '&self=1';
   };
   document.getElementById('o-share').onclick = function () {
     copyText(friendLink(orgParam), 'Friend link copied');
@@ -1371,36 +1542,61 @@
   // ============================================================
   //  BOOT / ROUTER
   // ============================================================
+  // show the poll once we have its config + its hash ref
+  function renderPoll(poll, ref, h) {
+    if (!poll || !poll.dates || !poll.dates.length) {
+      show('create'); renderCreate();
+      toast('That link looks broken — start a new one.');
+      return;
+    }
+    if (h.made) { renderLinks(poll, ref); show('links'); return; }
+    if (h.org) { renderResults(poll, ref); show('results'); return; }
+    // respondent (self=1 => organizer adding their own availability)
+    renderRespond(poll, ref, !!h.self);
+    show('respond');
+  }
+  function showLoadError(msg) {
+    document.getElementById('load-spin').hidden = true;
+    document.getElementById('load-title').textContent = 'Poll not found';
+    document.getElementById('load-msg').textContent = msg;
+    document.getElementById('load-actions').hidden = false;
+    show('load');
+  }
+  // Short link (#p=<id>): fetch the config from the database, then render.
+  function routeShort(h) {
+    var ref = 'p=' + h.p;
+    if (!(LIVE && fbdb)) {
+      showLoadError('This link needs a connection to load. Check that you’re online and try again.');
+      return;
+    }
+    document.getElementById('load-spin').hidden = false;
+    document.getElementById('load-title').textContent = 'Loading poll…';
+    document.getElementById('load-msg').textContent = 'Fetching the details for this poll.';
+    document.getElementById('load-actions').hidden = true;
+    show('load');
+    loadPollDoc(h.p).then(function (blob) {
+      if (!blob) { showLoadError('We couldn’t find a poll for this link. It may have been mistyped or removed.'); return; }
+      renderPoll(decodePoll(blob), ref, h);
+    }, function () {
+      showLoadError('Couldn’t load this poll — check your connection and try again.');
+    });
+  }
   function route() {
     if (orgUnsub) { orgUnsub(); orgUnsub = null; } // stop live listener when leaving results
     var h = parseHash();
+    if (h.p) { routeShort(h); return; }
     if (!h.poll) {
       show('create');
       renderCreate();
       return;
     }
-    var poll = decodePoll(h.poll);
-    if (!poll || !poll.dates || !poll.dates.length) {
-      // corrupt link -> fall back to create
-      show('create'); renderCreate();
-      toast('That link looks broken — start a new one.');
-      return;
-    }
-    var param = h.poll;
-
-    if (h.made) { renderLinks(poll, param); show('links'); return; }
-
-    if (h.org) {
-      renderResults(poll, param);
-      show('results');
-      return;
-    }
-
-    // respondent (self=1 => organizer adding their own availability)
-    renderRespond(poll, param, !!h.self);
-    show('respond');
+    renderPoll(decodePoll(h.poll), 'poll=' + h.poll, h);
   }
 
+  document.getElementById('load-home').onclick = function () {
+    if (history.replaceState) { history.replaceState(null, '', location.pathname + location.search); route(); }
+    else { location.hash = ''; }
+  };
   document.getElementById('homelink').onclick = function (e) {
     e.preventDefault();
     if (!location.hash) return; // already home

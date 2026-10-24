@@ -129,7 +129,7 @@ Responses are stored in a free Firebase Firestore database, so the app needs a F
          allow read: if true;
          allow create, update: if request.resource.data.pollId is string
            && request.resource.data.n is string && request.resource.data.n.size() <= 60
-           && request.resource.data.a is string && request.resource.data.a.size() <= 80;
+           && request.resource.data.a is string && request.resource.data.a.size() <= 400;
          allow delete: if true;
        }
        // Per-organizer "Your polls" list — only that signed-in user can touch theirs

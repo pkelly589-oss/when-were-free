@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Poll responses — open, since friends aren't signed in.
+    match /responses/{id} {
+      allow read: if true;
+      allow create, update: if request.resource.data.pollId is string
+        && request.resource.data.n is string && request.resource.data.n.size() <= 60
+        && request.resource.data.a is string && request.resource.data.a.size() <= 400;
+      allow delete: if true;
+    }
+
+    // Saved poll configs for short links (#p=<id>) — anyone can read (friends
+    // open the link) and create (organizers make polls without signing in);
+    // never editable or deletable once written, so a link can't be hijacked.
+    match /polls/{id} {
+      allow read: if true;
+      allow create: if request.resource.data.e is string
+        && request.resource.data.e.size() <= 4000;
+      allow update, delete: if false;
+    }
+
+    // Per-organizer "Your polls" list — only that signed-in user can touch theirs.
+    match /organizers/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
